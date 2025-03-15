@@ -1,0 +1,32 @@
+{
+  "originHash" : "9e992ac029d5903b68e8c00740ff3ddd9d458ed26a489f11d0cb5a226ae7f43a",
+  "pins" : [
+    {
+      "identity" : "altsign",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/SideStore/AltSign",
+      "state" : {
+        "revision" : "5c278001ccc69e28b9adfd6659a24faf14cc61b3"
+      }
+    },
+    {
+      "identity" : "keychainaccess",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/kishikawakatsumi/KeychainAccess",
+      "state" : {
+        "branch" : "master",
+        "revision" : "e0c7eebc5a4465a3c4680764f26b7a61f567cdaf"
+      }
+    },
+    {
+      "identity" : "starscream",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/daltoniam/Starscream",
+      "state" : {
+        "revision" : "c6bfd1af48efcc9a9ad203665db12375ba6b145a",
+        "version" : "4.0.8"
+      }
+    }
+  ],
+  "version" : 3
+}
