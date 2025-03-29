@@ -5,7 +5,7 @@
 //  Created by s s on 2025/3/15.
 //
 import SwiftUI
-import AltSign
+import StosSign
 
 class AlertHelper<T> : ObservableObject {
     @Published var show = false
@@ -83,9 +83,9 @@ extension String: @retroactive LocalizedError {
 class SharedModel: ObservableObject {
     @Published var isLogin = false
     @AppStorage("AnisetteServer") var anisetteServerURL = "https://ani.sidestore.io"
-    var session: ALTAppleAPISession?
-    var account: ALTAccount?
-    var team: ALTTeam?
+    var session: AppleAPISession?
+    var account: Account?
+    var team: Team?
     
     init() {
         AnisetteDataHelper.shared.url = URL(string: anisetteServerURL)

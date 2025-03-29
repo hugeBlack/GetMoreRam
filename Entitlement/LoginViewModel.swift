@@ -5,7 +5,7 @@
 //  Created by s s on 2025/3/15.
 //
 import SwiftUI
-import AltSign
+import StosSign
 import KeychainAccess
 
 class LoginViewModel: ObservableObject {
@@ -55,8 +55,8 @@ class LoginViewModel: ObservableObject {
         
         let anisetteData = try await AnisetteDataHelper.shared.getAnisetteData()
         
-        let (account, session) = try await withUnsafeThrowingContinuation { (c : UnsafeContinuation<(ALTAccount, ALTAppleAPISession), Error>) in
-            ALTAppleAPI.shared.authenticate(appleID: appleID, password: password, anisetteData: anisetteData) { [self] (completionHandler) in
+        let (account, session) = try await withUnsafeThrowingContinuation { (c : UnsafeContinuation<(Account, AppleAPISession), Error>) in
+            AppleAPI().authenticate(appleID: appleID, password: password, anisetteData: anisetteData) { [self] (completionHandler) in
                 verificationCodeHandler = completionHandler
                 Task{ await MainActor.run {
                     needVerificationCode = true
@@ -91,11 +91,11 @@ class LoginViewModel: ObservableObject {
         return true
     }
     
-    func fetchTeam(for account: ALTAccount, session: ALTAppleAPISession) async throws -> ALTTeam
+    func fetchTeam(for account: Account, session: AppleAPISession) async throws -> Team
     {
 
-        let fetchedTeams = try await withUnsafeThrowingContinuation { (c: UnsafeContinuation<[ALTTeam]?, Error>) in
-            ALTAppleAPI.shared.fetchTeams(for: account, session: session) { (teams, error) in
+        let fetchedTeams = try await withUnsafeThrowingContinuation { (c: UnsafeContinuation<[Team]?, Error>) in
+            AppleAPI().fetchTeamsForAccount(account: account, session: session) { (teams, error) in
                 if let error {
                     c.resume(throwing: error)
                     return

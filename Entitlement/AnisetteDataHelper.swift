@@ -10,8 +10,7 @@ import Foundation
 import CommonCrypto
 import Starscream
 import KeychainAccess
-
-import AltSign
+import StosSign
 
 final class AnisetteDataHelper: WebSocketDelegate
 {
@@ -34,7 +33,7 @@ final class AnisetteDataHelper: WebSocketDelegate
     static var shared: AnisetteDataHelper = AnisetteDataHelper()
     
     var loggingFunc: ((String)->Void)?
-    func getAnisetteData(refresh: Bool = false) async throws -> ALTAnisetteData
+    func getAnisetteData(refresh: Bool = false) async throws -> AnisetteData
     {
         
         if url == nil {
@@ -43,7 +42,7 @@ final class AnisetteDataHelper: WebSocketDelegate
         
         self.printOut("Anisette URL: \(self.url!.absoluteString)")
         
-        let ans : ALTAnisetteData
+        let ans : AnisetteData
         if let identifier = Keychain.shared.identifier,
            let adiPb = Keychain.shared.adiPb {
             ans = try await self.fetchAnisetteV3(identifier, adiPb)
@@ -55,7 +54,7 @@ final class AnisetteDataHelper: WebSocketDelegate
     
     // MARK: - COMMON
     
-    func extractAnisetteData(_ data: Data, _ response: HTTPURLResponse?, v3: Bool) async throws -> ALTAnisetteData {
+    func extractAnisetteData(_ data: Data, _ response: HTTPURLResponse?, v3: Bool) async throws -> AnisetteData {
         // make sure this JSON is in the format we expect
         // convert data to json
         if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: String] {
@@ -111,10 +110,13 @@ final class AnisetteDataHelper: WebSocketDelegate
             
             self.printOut("Anisette used: \(formattedJSON)")
             self.printOut("Original JSON: \(json)")
-            if let anisette = ALTAnisetteData(json: formattedJSON) {
+            do {
+                let jsonData = try JSONEncoder().encode(formattedJSON)
+                let anisette = try JSONDecoder().decode(AnisetteData.self, from: jsonData)
+                
                 self.printOut("Anisette is valid!")
                 return anisette
-            } else {
+            } catch {
                 self.printOut("Anisette is invalid!!!!")
                 if v3 {
                     throw "Invalid anisette (the returned data may not have all the required fields)"
@@ -134,7 +136,7 @@ final class AnisetteDataHelper: WebSocketDelegate
     
     // MARK: - V3: PROVISIONING
     
-    func provision() async throws -> ALTAnisetteData {
+    func provision() async throws -> AnisetteData {
         try await fetchClientInfo()
             self.printOut("Getting provisioning URLs")
             var request = self.buildAppleRequest(url: URL(string: "https://gsa.apple.com/grandslam/GsService2/lookup")!)
@@ -160,7 +162,7 @@ final class AnisetteDataHelper: WebSocketDelegate
         
     }
     
-    func startProvisioningSession() async throws -> ALTAnisetteData{
+    func startProvisioningSession() async throws -> AnisetteData {
         let provisioningSessionURL = self.url!.appendingPathComponent("v3").appendingPathComponent("provisioning_session")
         var wsRequest = URLRequest(url: provisioningSessionURL)
         wsRequest.timeoutInterval = 5
@@ -360,7 +362,7 @@ final class AnisetteDataHelper: WebSocketDelegate
 
     }
     
-    func fetchAnisetteV3(_ identifier: String, _ adiPb: String) async throws -> ALTAnisetteData {
+    func fetchAnisetteV3(_ identifier: String, _ adiPb: String) async throws -> AnisetteData {
         try await fetchClientInfo()
         self.printOut("Fetching anisette V3")
         let url = menuAnisetteURL

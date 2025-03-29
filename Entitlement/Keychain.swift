@@ -9,7 +9,7 @@
 import Foundation
 import KeychainAccess
 
-import AltSign
+import StosSign
 
 @propertyWrapper
 public struct KeychainItem<Value>

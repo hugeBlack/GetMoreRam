@@ -7,26 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		17D124792D85856000796C1D /* OpenSSL.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 17D124782D85856000796C1D /* OpenSSL.xcframework */; };
-		17D1247A2D85856000796C1D /* OpenSSL.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 17D124782D85856000796C1D /* OpenSSL.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		17EE68AA2D84892600B77523 /* AltSign-Static in Frameworks */ = {isa = PBXBuildFile; productRef = 17EE68A92D84892600B77523 /* AltSign-Static */; };
 		17EE68B02D848EA100B77523 /* Starscream in Frameworks */ = {isa = PBXBuildFile; productRef = 17EE68AF2D848EA100B77523 /* Starscream */; };
 		17EE68B32D848EF000B77523 /* KeychainAccess in Frameworks */ = {isa = PBXBuildFile; productRef = 17EE68B22D848EF000B77523 /* KeychainAccess */; };
+		4EE1A6092D954CE9007D655E /* StosSign in Frameworks */ = {isa = PBXBuildFile; productRef = 4EE1A6082D954CE9007D655E /* StosSign */; };
 /* End PBXBuildFile section */
-
-/* Begin PBXCopyFilesBuildPhase section */
-		17D1247B2D85856000796C1D /* Embed Frameworks */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 10;
-			files = (
-				17D1247A2D85856000796C1D /* OpenSSL.xcframework in Embed Frameworks */,
-			);
-			name = "Embed Frameworks";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		173496F02D847E82007994DB /* Entitlement.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Entitlement.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -59,9 +43,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4EE1A6092D954CE9007D655E /* StosSign in Frameworks */,
 				17EE68B32D848EF000B77523 /* KeychainAccess in Frameworks */,
-				17EE68AA2D84892600B77523 /* AltSign-Static in Frameworks */,
-				17D124792D85856000796C1D /* OpenSSL.xcframework in Frameworks */,
 				17EE68B02D848EA100B77523 /* Starscream in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -104,7 +87,6 @@
 				173496EC2D847E82007994DB /* Sources */,
 				173496ED2D847E82007994DB /* Frameworks */,
 				173496EE2D847E82007994DB /* Resources */,
-				17D1247B2D85856000796C1D /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -115,9 +97,9 @@
 			);
 			name = Entitlement;
 			packageProductDependencies = (
-				17EE68A92D84892600B77523 /* AltSign-Static */,
 				17EE68AF2D848EA100B77523 /* Starscream */,
 				17EE68B22D848EF000B77523 /* KeychainAccess */,
+				4EE1A6082D954CE9007D655E /* StosSign */,
 			);
 			productName = Entitlement;
 			productReference = 173496F02D847E82007994DB /* Entitlement.app */;
@@ -148,9 +130,9 @@
 			mainGroup = 173496E72D847E82007994DB;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				17EE68A82D84892600B77523 /* XCRemoteSwiftPackageReference "AltSign" */,
 				17EE68AE2D848EA100B77523 /* XCRemoteSwiftPackageReference "Starscream" */,
 				17EE68B12D848EF000B77523 /* XCRemoteSwiftPackageReference "KeychainAccess" */,
+				4EE1A6072D954CE9007D655E /* XCRemoteSwiftPackageReference "StosSign" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 173496F12D847E82007994DB /* Products */;
@@ -310,7 +292,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"Entitlement/Preview Content\"";
-				DEVELOPMENT_TEAM = 3C3YHUUV75;
+				DEVELOPMENT_TEAM = 95J8WZ4TN8;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Entitlement/Info.plist;
@@ -326,7 +308,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.aigch.Entitlement;
+				PRODUCT_BUNDLE_IDENTIFIER = com.stos.Entitlement;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -342,7 +324,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"Entitlement/Preview Content\"";
-				DEVELOPMENT_TEAM = 3C3YHUUV75;
+				DEVELOPMENT_TEAM = 95J8WZ4TN8;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Entitlement/Info.plist;
@@ -358,7 +340,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.aigch.Entitlement;
+				PRODUCT_BUNDLE_IDENTIFIER = com.stos.Entitlement;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -390,14 +372,6 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		17EE68A82D84892600B77523 /* XCRemoteSwiftPackageReference "AltSign" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/SideStore/AltSign";
-			requirement = {
-				kind = revision;
-				revision = 5c278001ccc69e28b9adfd6659a24faf14cc61b3;
-			};
-		};
 		17EE68AE2D848EA100B77523 /* XCRemoteSwiftPackageReference "Starscream" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/daltoniam/Starscream";
@@ -414,14 +388,17 @@
 				kind = branch;
 			};
 		};
+		4EE1A6072D954CE9007D655E /* XCRemoteSwiftPackageReference "StosSign" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/stossy11/StosSign.git";
+			requirement = {
+				kind = revision;
+				revision = 70a80bdd2b570020e917ec4a6fb79a8cf4ba1100;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		17EE68A92D84892600B77523 /* AltSign-Static */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 17EE68A82D84892600B77523 /* XCRemoteSwiftPackageReference "AltSign" */;
-			productName = "AltSign-Static";
-		};
 		17EE68AF2D848EA100B77523 /* Starscream */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 17EE68AE2D848EA100B77523 /* XCRemoteSwiftPackageReference "Starscream" */;
@@ -431,6 +408,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 17EE68B12D848EF000B77523 /* XCRemoteSwiftPackageReference "KeychainAccess" */;
 			productName = KeychainAccess;
+		};
+		4EE1A6082D954CE9007D655E /* StosSign */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4EE1A6072D954CE9007D655E /* XCRemoteSwiftPackageReference "StosSign" */;
+			productName = StosSign;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

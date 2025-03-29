@@ -5,7 +5,7 @@
 //  Created by s s on 2025/3/15.
 //
 import SwiftUI
-import AltSign
+import StosSign
 
 class AppIDModel : ObservableObject, Hashable {
     static func == (lhs: AppIDModel, rhs: AppIDModel) -> Bool {
@@ -16,11 +16,11 @@ class AppIDModel : ObservableObject, Hashable {
         hasher.combine(ObjectIdentifier(self))
     }
     
-    var appID: ALTAppID
+    var appID: AppID
     @Published var bundleID: String
     @Published var result: String = ""
     
-    init(appID: ALTAppID) {
+    init(appID: AppID) {
         self.appID = appID
         bundleID = appID.bundleIdentifier
     }
@@ -74,8 +74,8 @@ class AppIDViewModel : ObservableObject {
             throw "Please Login First"
         }
         
-        let ids = try await withUnsafeThrowingContinuation { (c: UnsafeContinuation<[ALTAppID], Error>) in
-            ALTAppleAPI.shared.fetchAppIDs(for: team, session: session) { (appIDs, error) in
+        let ids = try await withUnsafeThrowingContinuation { (c: UnsafeContinuation<[AppID], Error>) in
+            AppleAPI().fetchAppIDsForTeam(team: team, session: session) { (appIDs, error) in
                 if let error = appIDs as? Error {
                     c.resume(throwing: error)
                 }

@@ -1,12 +1,13 @@
 {
-  "originHash" : "9e992ac029d5903b68e8c00740ff3ddd9d458ed26a489f11d0cb5a226ae7f43a",
+  "originHash" : "e552e6289f39bb6d56242374236e8e45c5ecb2253ad16daa11803a794310ff04",
   "pins" : [
     {
-      "identity" : "altsign",
+      "identity" : "corecrypto-spm",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/SideStore/AltSign",
+      "location" : "https://github.com/stossy11/CoreCrypto-SPM",
       "state" : {
-        "revision" : "5c278001ccc69e28b9adfd6659a24faf14cc61b3"
+        "branch" : "master",
+        "revision" : "32afe5672e5a1bb8cdaf8d46f6558af91c9dc197"
       }
     },
     {
@@ -25,6 +26,23 @@
       "state" : {
         "revision" : "c6bfd1af48efcc9a9ad203665db12375ba6b145a",
         "version" : "4.0.8"
+      }
+    },
+    {
+      "identity" : "stossign",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/stossy11/StosSign.git",
+      "state" : {
+        "revision" : "70a80bdd2b570020e917ec4a6fb79a8cf4ba1100"
+      }
+    },
+    {
+      "identity" : "zsign-ios",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/zwsn/zsign-ios.git",
+      "state" : {
+        "branch" : "main",
+        "revision" : "a7f275fb4830ea48adf536fcddee7d05471970d0"
       }
     }
   ],

@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import AltSign
+import StosSign
 
 struct SettingsView: View {
 
