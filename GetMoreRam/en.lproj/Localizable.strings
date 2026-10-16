@@ -1,1 +1,31 @@
-
+/* English */
+"App IDs" = "App IDs";
+"Settings" = "Settings";
+"Account" = "Account";
+"Email" = "Email";
+"Team ID" = "Team ID";
+"Sign in" = "Sign in";
+"Import SideStore Account" = "Import SideStore Account";
+"Anisette Server URL" = "Anisette Server URL";
+"Clean Up Keychain" = "Clean Up Keychain";
+"If something went wrong during signing in, please try to clean up the keychain, repoen the app and try again. \n \nIf you use SideStore and are already signed in, please also try exporting SideStore Account from SideStore settings and import it here to sign in." = "If something went wrong during signing in, please try to clean up the keychain, reopen the app and try again.\n\nIf you use SideStore and are already signed in, please also try exporting SideStore Account from SideStore settings and import it here to sign in.";
+"Error" = "Error";
+"OK" = "OK";
+"SideStore Account" = "SideStore Account";
+"Apple ID" = "Apple ID";
+"Password" = "Password";
+"Verification Code" = "Verification Code";
+"Continue" = "Continue";
+"Debugging" = "Debugging";
+"Cancel" = "Cancel";
+"Choose Team" = "Choose Team";
+"Free" = "Free";
+"Individual" = "Individual";
+"Organization" = "Organization";
+"Unknown" = "Unknown";
+"Add Increased Memory Limit" = "Add Increased Memory Limit";
+"Refresh" = "Refresh";
+"No App IDs found" = "No App IDs found";
+"Increased Memory Limit" = "Increased Memory Limit";
+"Enabled" = "Enabled";
+"Disabled" = "Disabled";
