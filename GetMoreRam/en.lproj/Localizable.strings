@@ -1,4 +1,3 @@
-/* English */
 "App IDs" = "App IDs";
 "Settings" = "Settings";
 "Account" = "Account";
@@ -7,6 +6,12 @@
 "Sign in" = "Sign in";
 "Import SideStore Account" = "Import SideStore Account";
 "Anisette Server URL" = "Anisette Server URL";
+"Anisette Server" = "Anisette Server";
+"Anisette" = "Anisette";
+"Custom" = "Custom";
+"Custom Server" = "Custom Server";
+"Enter a full Anisette V3 server URL" = "Enter a full Anisette V3 server URL";
+"Recommended: jkcoxson (Windows ADI) or StikStore (Windows ADI)" = "Recommended: jkcoxson (Windows ADI) or StikStore (Windows ADI)";
 "Clean Up Keychain" = "Clean Up Keychain";
 "If something went wrong during signing in, please try to clean up the keychain, repoen the app and try again. \n \nIf you use SideStore and are already signed in, please also try exporting SideStore Account from SideStore settings and import it here to sign in." = "If something went wrong during signing in, please try to clean up the keychain, reopen the app and try again.\n\nIf you use SideStore and are already signed in, please also try exporting SideStore Account from SideStore settings and import it here to sign in.";
 "Error" = "Error";
