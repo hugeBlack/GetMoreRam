@@ -13,7 +13,6 @@
 "Enter a full Anisette V3 server URL" = "آدرس کامل سرور Anisette V3 را وارد کنید";
 "Recommended: jkcoxson (Windows ADI) or StikStore (Windows ADI)" = "پیشنهادی: jkcoxson (Windows ADI) یا StikStore (Windows ADI)";
 "Clean Up Keychain" = "پاک‌سازی Keychain";
-"If something went wrong during signing in, please try to clean up the keychain, repoen the app and try again. \n \nIf you use SideStore and are already signed in, please also try exporting SideStore Account from SideStore settings and import it here to sign in." = "اگر هنگام ورود مشکلی پیش آمد، Keychain را پاک کنید، اپ را دوباره باز کنید و دوباره تلاش کنید.\n\nاگر از SideStore استفاده می‌کنید و قبلاً وارد شده‌اید، اکانت SideStore را از تنظیمات آن export کنید و اینجا import کنید.";
 "Error" = "خطا";
 "OK" = "باشه";
 "SideStore Account" = "اکانت SideStore";
@@ -34,3 +33,15 @@
 "Increased Memory Limit" = "محدودیت حافظه بیشتر";
 "Enabled" = "فعال";
 "Disabled" = "غیرفعال";
+"Signed in" = "وارد شده";
+"Not signed in" = "وارد نشده";
+"Troubleshooting" = "عیب‌یابی";
+"Credits" = "سازندگان";
+"Original project by hugeBlack" = "پروژه‌ی اصلی از hugeBlack";
+"Design by FrizzleM" = "طراحی از FrizzleM";
+"Source code" = "سورس کد";
+"Server Response" = "پاسخ سرور";
+"Tap Refresh to load your App IDs." = "برای بارگذاری App IDها روی «تازه‌سازی» بزن.";
+"Sign in from Settings first." = "اول از تنظیمات وارد شو.";
+"If something went wrong during signing in, clean up the keychain, reopen the app and try again." = "اگر هنگام ورود مشکلی پیش آمد، Keychain را پاک‌سازی کن، اپ را دوباره باز کن و دوباره تلاش کن.";
+"If you use SideStore and are already signed in, you can also export your SideStore account from its settings and import it here." = "اگر از SideStore استفاده می‌کنی و قبلاً واردش شده‌ای، می‌توانی اکانت SideStore را از تنظیمات خودش export کنی و اینجا import کنی.";
