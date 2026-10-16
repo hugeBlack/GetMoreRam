@@ -59,7 +59,15 @@ struct SettingsView: View {
                     Spacer()
                     TextField("", text: $sharedModel.anisetteServerURL)
                         .multilineTextAlignment(.trailing)
+                        .onChange(of: sharedModel.anisetteServerURL) { newValue in
+                            // Apply right away, so the next sign-in provisions and
+                            // signs in against the newly selected server.
+                            AnisetteDataHelper.shared.url = URL(string: newValue)
+                            AnisetteDataHelper.shared.resetClientInfo()
+                        }
                 }
+            } footer: {
+                Text("The server also decides which client identity is sent to Apple, so pick one that reports a working identity. https://ani.jkcoxson.com (default), https://ani.sidestore.io and https://ani2.stikstore.app are known anisette v3 servers.")
             }
             
             Section {
