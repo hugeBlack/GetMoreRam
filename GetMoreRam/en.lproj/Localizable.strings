@@ -13,7 +13,6 @@
 "Enter a full Anisette V3 server URL" = "Enter a full Anisette V3 server URL";
 "Recommended: jkcoxson (Windows ADI) or StikStore (Windows ADI)" = "Recommended: jkcoxson (Windows ADI) or StikStore (Windows ADI)";
 "Clean Up Keychain" = "Clean Up Keychain";
-"If something went wrong during signing in, please try to clean up the keychain, repoen the app and try again. \n \nIf you use SideStore and are already signed in, please also try exporting SideStore Account from SideStore settings and import it here to sign in." = "If something went wrong during signing in, please try to clean up the keychain, reopen the app and try again.\n\nIf you use SideStore and are already signed in, please also try exporting SideStore Account from SideStore settings and import it here to sign in.";
 "Error" = "Error";
 "OK" = "OK";
 "SideStore Account" = "SideStore Account";
@@ -34,3 +33,15 @@
 "Increased Memory Limit" = "Increased Memory Limit";
 "Enabled" = "Enabled";
 "Disabled" = "Disabled";
+"Signed in" = "Signed in";
+"Not signed in" = "Not signed in";
+"Troubleshooting" = "Troubleshooting";
+"Credits" = "Credits";
+"Original project by hugeBlack" = "Original project by hugeBlack";
+"Design by FrizzleM" = "Design by FrizzleM";
+"Source code" = "Source code";
+"Server Response" = "Server Response";
+"Tap Refresh to load your App IDs." = "Tap Refresh to load your App IDs.";
+"Sign in from Settings first." = "Sign in from Settings first.";
+"If something went wrong during signing in, clean up the keychain, reopen the app and try again." = "If something went wrong during signing in, clean up the keychain, reopen the app and try again.";
+"If you use SideStore and are already signed in, you can also export your SideStore account from its settings and import it here." = "If you use SideStore and are already signed in, you can also export your SideStore account from its settings and import it here.";
