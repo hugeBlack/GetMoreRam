@@ -1,1 +1,31 @@
-
+/* Persian / Farsi */
+"App IDs" = "شناسه‌های اپ";
+"Settings" = "تنظیمات";
+"Account" = "حساب کاربری";
+"Email" = "ایمیل";
+"Team ID" = "شناسه تیم";
+"Sign in" = "ورود";
+"Import SideStore Account" = "وارد کردن اکانت SideStore";
+"Anisette Server URL" = "آدرس سرور Anisette";
+"Clean Up Keychain" = "پاک‌سازی Keychain";
+"If something went wrong during signing in, please try to clean up the keychain, repoen the app and try again. \n \nIf you use SideStore and are already signed in, please also try exporting SideStore Account from SideStore settings and import it here to sign in." = "اگر هنگام ورود مشکلی پیش آمد، Keychain را پاک کنید، اپ را دوباره باز کنید و دوباره تلاش کنید.\n\nاگر از SideStore استفاده می‌کنید و قبلاً وارد شده‌اید، اکانت SideStore را از تنظیمات آن export کنید و اینجا import کنید.";
+"Error" = "خطا";
+"OK" = "باشه";
+"SideStore Account" = "اکانت SideStore";
+"Apple ID" = "اپل آیدی";
+"Password" = "رمز عبور";
+"Verification Code" = "کد تأیید";
+"Continue" = "ادامه";
+"Debugging" = "دیباگ";
+"Cancel" = "لغو";
+"Choose Team" = "انتخاب تیم";
+"Free" = "رایگان";
+"Individual" = "فردی";
+"Organization" = "سازمانی";
+"Unknown" = "ناشناخته";
+"Add Increased Memory Limit" = "افزودن محدودیت حافظه بیشتر";
+"Refresh" = "تازه‌سازی";
+"No App IDs found" = "هیچ App ID پیدا نشد";
+"Increased Memory Limit" = "محدودیت حافظه بیشتر";
+"Enabled" = "فعال";
+"Disabled" = "غیرفعال";
