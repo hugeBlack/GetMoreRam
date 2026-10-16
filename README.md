@@ -41,9 +41,9 @@ The app currently supports:
  
 This project stands on the shoulders of these awesome people:
 • hugeBlack — Creator of the original GetMoreRam project. Without his work, this fork wouldn't exist. ❤️
-• Stossy11 — For StosSign
-• SideStore — Anisette Data fetching code originally from SideStore
-• nab138 / iloader — For the working Anisette server approach that fixed -80045 / 503 
+• Stossy11 — For StosSign.
+• SideStore — Anisette Data fetching code originally from SideStore.
+• nab138 / iloader — For the working Anisette server approach that fixed -80045 / 503 errors.
  
 📄 License
  
