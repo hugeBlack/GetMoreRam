@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import UIKit
 import UniformTypeIdentifiers
 import StosSign_API
 import StosSign_Auth
@@ -144,6 +145,19 @@ struct SettingsView: View {
                 Section {
                     Text(viewModel.logs)
                         .font(.system(.subheadline, design: .monospaced))
+                        .textSelection(.enabled)
+
+                    Button {
+                        UIPasteboard.general.string = viewModel.logs
+                    } label: {
+                        Label("Copy Logs", systemImage: "doc.on.doc")
+                    }
+                    .disabled(viewModel.logs.isEmpty)
+
+                    ShareLink(item: viewModel.logs) {
+                        Label("Share Logs", systemImage: "square.and.arrow.up")
+                    }
+                    .disabled(viewModel.logs.isEmpty)
                 } header: {
                     Text("Debugging")
                 }
@@ -228,6 +242,7 @@ struct SettingsView: View {
             return
         } catch {
             errorInfo = error.detailedDescription
+            viewModel.logs.append("\n[ERROR] \(errorInfo)\n")
             errorShow = true
         }
     }
