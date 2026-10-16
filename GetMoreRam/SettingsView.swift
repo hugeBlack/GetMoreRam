@@ -1,8 +1,6 @@
 //
 //  SettingsView.swift
-//  GetMoreRam
-//
-//  Created by s s on 2025/3/14.
+//  ram 6itoon
 //
 
 import SwiftUI
@@ -23,66 +21,170 @@ struct SettingsView: View {
     @State private var importResultShow = false
     @State private var importResultInfo = ""
     @State private var isImportingSideStoreAccount = false
-    
+    @State private var showAnisettePicker = false
+    @State private var customServerText = ""
+    @State private var showCustomServerAlert = false
+
+    private var selectedServerName: String {
+        if let match = presetAnisetteServers.first(where: { !$0.isCustom && $0.url == sharedModel.anisetteServerURL }) {
+            return match.name
+        }
+        return "Custom".loc
+    }
 
     var body: some View {
-        Form {
-
-            Section {
-                if sharedModel.isLogin {
-                    HStack {
-                        Text("Email".loc)
-                        Spacer()
-                        Text(email)
-                    }
-                    HStack {
-                        Text("Team ID".loc)
-                        Spacer()
-                        Text(teamId)
-                    }
-                } else {
-                    Button("Sign in".loc) {
-                        viewModel.loginModalShow = true
-                    }
-                    
-                    Button("Import SideStore Account".loc) {
-                        isImportingSideStoreAccount = true
-                    }
-                }
-            } header: {
-                Text("Account".loc)
-            }
-            
-            Section {
-                HStack {
-                    Text("Anisette Server URL".loc)
-                    Spacer()
-                    TextField("", text: $sharedModel.anisetteServerURL)
-                        .multilineTextAlignment(.trailing)
-                        .onChange(of: sharedModel.anisetteServerURL) { newValue in
-                            AnisetteDataHelper.shared.url = URL(string: newValue)
-                            AnisetteDataHelper.shared.resetClientInfo()
+        NavigationView {
+            List {
+                // Header
+                Section {
+                    HStack(spacing: 14) {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .fill(
+                                    LinearGradient(
+                                        colors: [AppTheme.accent, AppTheme.accentSecondary],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                                .frame(width: 56, height: 56)
+                            Image(systemName: "memorychip.fill")
+                                .font(.system(size: 26, weight: .semibold))
+                                .foregroundStyle(.white)
                         }
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("ram 6itoon")
+                                .font(.title2.bold())
+                            Text("Increased Memory Limit".loc)
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                    }
+                    .padding(.vertical, 6)
+                    .listRowBackground(Color.clear)
+                }
+                
+                // Account
+                Section {
+                    if sharedModel.isLogin {
+                        HStack {
+                            Label("Email".loc, systemImage: "envelope.fill")
+                            Spacer()
+                            Text(email)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
+                        HStack {
+                            Label("Team ID".loc, systemImage: "person.3.fill")
+                            Spacer()
+                            Text(teamId)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
+                    } else {
+                        Button {
+                            viewModel.loginModalShow = true
+                        } label: {
+                            Label("Sign in".loc, systemImage: "person.crop.circle.badge.plus")
+                                .font(.body.weight(.semibold))
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 8)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(AppTheme.accent)
+                        .listRowBackground(Color.clear)
+                        
+                        Button {
+                            isImportingSideStoreAccount = true
+                        } label: {
+                            Label("Import SideStore Account".loc, systemImage: "square.and.arrow.down")
+                        }
+                    }
+                } header: {
+                    Text("Account".loc)
+                }
+                
+                // Anisette
+                Section {
+                    Button {
+                        showAnisettePicker = true
+                    } label: {
+                        HStack {
+                            Label("Anisette Server".loc, systemImage: "server.rack")
+                            Spacer()
+                            Text(selectedServerName)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                            Image(systemName: "chevron.up.chevron.down")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.tertiary)
+                        }
+                    }
+                    .foregroundStyle(.primary)
+                    
+                    if !sharedModel.anisetteServerURL.isEmpty {
+                        Text(sharedModel.anisetteServerURL)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .textSelection(.enabled)
+                    }
+                } header: {
+                    Text("Anisette".loc)
+                } footer: {
+                    Text("Recommended: jkcoxson (Windows ADI) or StikStore (Windows ADI)".loc)
+                }
+                
+                // Actions
+                Section {
+                    Button(role: .destructive) {
+                        cleanUp()
+                    } label: {
+                        Label("Clean Up Keychain".loc, systemImage: "trash")
+                    }
+                } footer: {
+                    Text("If something went wrong during signing in, please try to clean up the keychain, repoen the app and try again. \n \nIf you use SideStore and are already signed in, please also try exporting SideStore Account from SideStore settings and import it here to sign in.".loc)
                 }
             }
-            
-            Section {
-                Button("Clean Up Keychain".loc) {
-                    cleanUp()
+            .navigationTitle("Settings".loc)
+            .navigationBarTitleDisplayMode(.large)
+        }
+        .navigationViewStyle(.stack)
+        .confirmationDialog("Anisette Server".loc, isPresented: $showAnisettePicker, titleVisibility: .visible) {
+            ForEach(presetAnisetteServers) { server in
+                Button(server.name) {
+                    if server.isCustom {
+                        customServerText = sharedModel.anisetteServerURL
+                        showCustomServerAlert = true
+                    } else {
+                        sharedModel.anisettePresetId = server.id
+                        sharedModel.applyAnisetteServer(server.url)
+                    }
                 }
-            } footer: {
-                Text("If something went wrong during signing in, please try to clean up the keychain, repoen the app and try again. \n \nIf you use SideStore and are already signed in, please also try exporting SideStore Account from SideStore settings and import it here to sign in.".loc)
             }
+            Button("Cancel".loc, role: .cancel) {}
+        }
+        .alert("Custom Server".loc, isPresented: $showCustomServerAlert) {
+            TextField("https://…", text: $customServerText)
+                .textInputAutocapitalization(.never)
+                .keyboardType(.URL)
+            Button("OK".loc) {
+                let url = customServerText.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !url.isEmpty else { return }
+                sharedModel.anisettePresetId = "custom"
+                sharedModel.applyAnisetteServer(url)
+            }
+            Button("Cancel".loc, role: .cancel) {}
+        } message: {
+            Text("Enter a full Anisette V3 server URL".loc)
         }
         .alert("Error".loc, isPresented: $errorShow){
-            Button("OK".loc, action: {
-            })
+            Button("OK".loc, action: {})
         } message: {
             Text(errorInfo)
         }
         .alert("SideStore Account".loc, isPresented: $importResultShow){
-            Button("OK".loc, action: {
-            })
+            Button("OK".loc, action: {})
         } message: {
             Text(importResultInfo)
         }
@@ -93,7 +195,6 @@ struct SettingsView: View {
         ) { result in
             importSideStoreAccount(result)
         }
-        
         .sheet(isPresented: $viewModel.loginModalShow, onDismiss: {
             viewModel.cancelAuthentication()
         }) {
@@ -110,7 +211,7 @@ struct SettingsView: View {
                 Section {
                     TextField("", text: $viewModel.appleID)
                         .keyboardType(.emailAddress)
-                        .autocapitalization(.none)
+                        .textInputAutocapitalization(.never)
                         .disableAutocorrection(true)
                         .disabled(viewModel.isLoginInProgress)
                 } header: {
@@ -135,11 +236,13 @@ struct SettingsView: View {
                         Task{ await loginButtonClicked() }
                     }
                     .disabled(continueButtonDisabled)
+                    .tint(AppTheme.accent)
                 }
                 
                 Section {
                     Text(viewModel.logs)
-                        .font(.system(.subheadline, design: .monospaced))
+                        .font(.system(.caption, design: .monospaced))
+                        .foregroundStyle(.secondary)
                 } header: {
                     Text("Debugging".loc)
                 }
@@ -233,7 +336,6 @@ struct SettingsView: View {
             return viewModel.isVerificationCodeSubmitting ||
                 viewModel.verificationCode.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         }
-
         return viewModel.isLoginInProgress
     }
     
@@ -319,5 +421,4 @@ struct SettingsView: View {
             return "Unknown".loc
         }
     }
-    
 }
