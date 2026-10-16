@@ -8,14 +8,6 @@ import StosSign_API
 import StosSign_Auth
 import StosSign_Common
 
-// MARK: - Theme
-enum AppTheme {
-    static let accent = Color(red: 0.62, green: 0.28, blue: 0.98) // purple
-    static let accentSecondary = Color(red: 0.45, green: 0.18, blue: 0.85)
-    static let cardBackground = Color(.secondarySystemGroupedBackground)
-    static let background = Color(.systemGroupedBackground)
-}
-
 struct AnisetteServerOption: Identifiable, Hashable {
     let id: String
     let name: String

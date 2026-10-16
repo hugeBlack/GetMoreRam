@@ -17,7 +17,8 @@ struct ContentView: View {
                     Label("Settings".loc, systemImage: "gearshape.fill")
                 }
         }
-        .tint(AppTheme.accent)
+        .tint(Theme.accent)
+        .preferredColorScheme(.dark)
         .environmentObject(DataManager.shared.model)
     }
 }

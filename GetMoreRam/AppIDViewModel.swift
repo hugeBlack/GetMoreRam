@@ -34,7 +34,9 @@ class AppIDModel : ObservableObject, Hashable {
 
         let cool = try await AppleAPI.shared.updateAppID(appID, capabilities: ["INCREASED_MEMORY_LIMIT"], team: team, session: session)
         
-        result = "\(cool)"
+        await MainActor.run {
+            result = "\(cool)"
+        }
     }
     
 }
