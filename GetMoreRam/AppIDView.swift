@@ -18,7 +18,7 @@ struct AppIDEditView : View {
                 Button {
                     Task { await addIncreasedMemoryLimit() }
                 } label: {
-                    Text("Add Increased Memory Limit")
+                    Text("Add Increased Memory Limit".loc)
                 }
             }
             
@@ -69,11 +69,11 @@ struct AppIDView : View {
                         }
                     }
                 } header: {
-                    Text("App IDs")
+                    Text("App IDs".loc)
                 }
                 
                 Section {
-                    Button("Refresh") {
+                    Button("Refresh".loc) {
                         Task { await refreshButtonClicked() }
                     }
                 }

@@ -345,10 +345,32 @@ final class AnisetteDataHelper
             return
         }
         
-        self.printOut("Using custom client_info")
-                        
-        self.clientInfo = "<iMac18,3> <macOS;27.0;26A5378j> <com.apple.AuthKit/1 (com.apple.akd/1.0)>"
-        self.userAgent = "AuthKit/1 (Macintosh; OS X 27.0) (com.apple.akd/1.0)"
+        // Fetch client_info from the anisette server (required to fix -80045 / 503)
+        // Working servers return Windows client info that Apple currently accepts
+        let clientInfoURL = self.url!.appendingPathComponent("v3").appendingPathComponent("client_info")
+        self.printOut("Fetching client_info from: \(clientInfoURL.absoluteString)")
+        
+        do {
+            let (data, _) = try await URLSession.shared.data(from: clientInfoURL)
+            
+            if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: String],
+               let clientInfo = json["client_info"],
+               let userAgent = json["user_agent"] {
+                self.printOut("Server is V3 - using server client_info")
+                self.clientInfo = clientInfo
+                self.userAgent = userAgent
+            } else {
+                // Fallback to known-working Windows client info (same as iloader / SideStore fix)
+                self.printOut("Could not parse server client_info, using Windows fallback")
+                self.clientInfo = "<PC> <Windows;6.2(0,0);9200> <com.apple.AuthKit/1 (com.apple.iTunes/12.12.4.1)>"
+                self.userAgent = "akd/1.0 CFNetwork/808.1.4"
+            }
+        } catch {
+            self.printOut("Failed to fetch client_info: \(error). Using Windows fallback")
+            self.clientInfo = "<PC> <Windows;6.2(0,0);9200> <com.apple.AuthKit/1 (com.apple.iTunes/12.12.4.1)>"
+            self.userAgent = "akd/1.0 CFNetwork/808.1.4"
+        }
+        
         self.printOut("Client-Info: \(self.clientInfo!)")
         self.printOut("User-Agent: \(self.userAgent!)")
         
@@ -371,50 +393,6 @@ final class AnisetteDataHelper
         let uuid: UUID = decoded.object()
         self.deviceId = uuid.uuidString.uppercased()
         self.printOut("X-Mme-Device-Id: \(self.deviceId!)")
-
-        // Client info on Anisette Servers are out of date for latest GSA
-        /*
-        let clientInfoURL = self.url!.appendingPathComponent("v3").appendingPathComponent("client_info")
-        
-        let (data, response) = try await URLSession.shared.data(from: clientInfoURL)
-        
-
-            do {
-                
-                if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: String] {
-                    if let clientInfo = json["client_info"] {
-                        self.printOut("Server is V3")
-                        
-                        self.clientInfo = clientInfo
-                        self.userAgent = json["user_agent"]!
-                        self.printOut("Client-Info: \(self.clientInfo!)")
-                        self.printOut("User-Agent: \(self.userAgent!)")
-                        
-                        if Keychain.shared.identifier == nil {
-                            self.printOut("Generating identifier")
-                            var bytes = [Int8](repeating: 0, count: 16)
-                            let status = SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes)
-                            
-                            if status != errSecSuccess {
-                                self.printOut("ERROR GENERATING IDENTIFIER!!! \(status)")
-                                throw "Couldn't generate identifier"
-                            }
-                            
-                            Keychain.shared.identifier = Data(bytes: &bytes, count: bytes.count).base64EncodedString()
-                        }
-                        
-                        let decoded = Data(base64Encoded: Keychain.shared.identifier!)!
-                        self.mdLu = decoded.sha256().hexEncodedString()
-                        self.printOut("X-Apple-I-MD-LU: \(self.mdLu!)")
-                        let uuid: UUID = decoded.object()
-                        self.deviceId = uuid.uuidString.uppercased()
-                        self.printOut("X-Mme-Device-Id: \(self.deviceId!)")
-                        
-                        return
-                    } else { throw "v1 server is not supported" }
-                } else { throw "Couldn't fetch client info. The returned data may not be in JSON" }
-            }
-        */
     }
     
     func fetchAnisetteV3(_ identifier: String, _ adiPb: String) async throws -> AnisetteData {

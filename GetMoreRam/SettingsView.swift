@@ -31,52 +31,56 @@ struct SettingsView: View {
             Section {
                 if sharedModel.isLogin {
                     HStack {
-                        Text("Email")
+                        Text("Email".loc)
                         Spacer()
                         Text(email)
                     }
                     HStack {
-                        Text("Team ID")
+                        Text("Team ID".loc)
                         Spacer()
                         Text(teamId)
                     }
                 } else {
-                    Button("Sign in") {
+                    Button("Sign in".loc) {
                         viewModel.loginModalShow = true
                     }
                     
-                    Button("Import SideStore Account") {
+                    Button("Import SideStore Account".loc) {
                         isImportingSideStoreAccount = true
                     }
                 }
             } header: {
-                Text("Account")
+                Text("Account".loc)
             }
             
             Section {
                 HStack {
-                    Text("Anisette Server URL")
+                    Text("Anisette Server URL".loc)
                     Spacer()
                     TextField("", text: $sharedModel.anisetteServerURL)
                         .multilineTextAlignment(.trailing)
+                        .onChange(of: sharedModel.anisetteServerURL) { newValue in
+                            AnisetteDataHelper.shared.url = URL(string: newValue)
+                            AnisetteDataHelper.shared.resetClientInfo()
+                        }
                 }
             }
             
             Section {
-                Button("Clean Up Keychain") {
+                Button("Clean Up Keychain".loc) {
                     cleanUp()
                 }
             } footer: {
-                Text("If something went wrong during signing in, please try to clean up the keychain, repoen the app and try again. \n \nIf you use SideStore and are already signed in, please also try exporting SideStore Account from SideStore settings and import it here to sign in.")
+                Text("If something went wrong during signing in, please try to clean up the keychain, repoen the app and try again. \n \nIf you use SideStore and are already signed in, please also try exporting SideStore Account from SideStore settings and import it here to sign in.".loc)
             }
         }
-        .alert("Error", isPresented: $errorShow){
+        .alert("Error".loc, isPresented: $errorShow){
             Button("OK".loc, action: {
             })
         } message: {
             Text(errorInfo)
         }
-        .alert("SideStore Account", isPresented: $importResultShow){
+        .alert("SideStore Account".loc, isPresented: $importResultShow){
             Button("OK".loc, action: {
             })
         } message: {
@@ -110,24 +114,24 @@ struct SettingsView: View {
                         .disableAutocorrection(true)
                         .disabled(viewModel.isLoginInProgress)
                 } header: {
-                    Text("Apple ID")
+                    Text("Apple ID".loc)
                 }
                 Section {
                     SecureField("", text: $viewModel.password)
                         .disabled(viewModel.isLoginInProgress)
                 } header: {
-                    Text("Password")
+                    Text("Password".loc)
                 }
                 if viewModel.needVerificationCode {
                     Section {
                         TextField("", text: $viewModel.verificationCode)
                             .disabled(viewModel.isVerificationCodeSubmitting)
                     } header: {
-                        Text("Verification Code")
+                        Text("Verification Code".loc)
                     }
                 }
                 Section {
-                    Button("Continue") {
+                    Button("Continue".loc) {
                         Task{ await loginButtonClicked() }
                     }
                     .disabled(continueButtonDisabled)
@@ -137,14 +141,14 @@ struct SettingsView: View {
                     Text(viewModel.logs)
                         .font(.system(.subheadline, design: .monospaced))
                 } header: {
-                    Text("Debugging")
+                    Text("Debugging".loc)
                 }
             }
-            .navigationTitle("Sign in")
+            .navigationTitle("Sign in".loc)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("Cancel", role: .cancel) {
+                    Button("Cancel".loc, role: .cancel) {
                         viewModel.cancelAuthentication()
                         viewModel.loginModalShow = false
                     }
@@ -176,11 +180,11 @@ struct SettingsView: View {
                     }
                 }
             }
-            .navigationTitle("Choose Team")
+            .navigationTitle("Choose Team".loc)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("Cancel", role: .cancel) {
+                    Button("Cancel".loc, role: .cancel) {
                         cancelTeamSelection()
                     }
                 }
@@ -306,13 +310,13 @@ struct SettingsView: View {
     func teamTypeDescription(_ type: TeamType) -> String {
         switch type {
         case .free:
-            return "Free"
+            return "Free".loc
         case .individual:
-            return "Individual"
+            return "Individual".loc
         case .organization:
-            return "Organization"
+            return "Organization".loc
         case .unknown:
-            return "Unknown"
+            return "Unknown".loc
         }
     }
     

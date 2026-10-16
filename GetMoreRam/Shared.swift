@@ -64,16 +64,11 @@ extension String: @retroactive LocalizedError {
 //    }()
     
     var loc: String {
-//        let message = NSLocalizedString(self, comment: "")
-//        if message != self {
-//            return message
-//        }
-//
-//        if let forcedString = String.enBundle?.localizedString(forKey: self, value: nil, table: nil){
-//            return forcedString
-//        }else {
-            return self
-//        }
+        let message = NSLocalizedString(self, comment: "")
+        if message != self {
+            return message
+        }
+        return self
     }
     
     func localizeWithFormat(_ arguments: CVarArg...) -> String{
@@ -84,7 +79,7 @@ extension String: @retroactive LocalizedError {
 
 class SharedModel: ObservableObject {
     @Published var isLogin = false
-    @AppStorage("AnisetteServer") var anisetteServerURL = "https://ani.sidestore.io"
+    @AppStorage("AnisetteServer") var anisetteServerURL = "https://ani.jkcoxson.com"
     var session: AppleAPISession?
     var account: Account?
     var team: Team?
