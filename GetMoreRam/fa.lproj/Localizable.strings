@@ -1,4 +1,3 @@
-/* Persian / Farsi */
 "App IDs" = "شناسه‌های اپ";
 "Settings" = "تنظیمات";
 "Account" = "حساب کاربری";
@@ -7,6 +6,12 @@
 "Sign in" = "ورود";
 "Import SideStore Account" = "وارد کردن اکانت SideStore";
 "Anisette Server URL" = "آدرس سرور Anisette";
+"Anisette Server" = "سرور Anisette";
+"Anisette" = "Anisette";
+"Custom" = "سفارشی";
+"Custom Server" = "سرور سفارشی";
+"Enter a full Anisette V3 server URL" = "آدرس کامل سرور Anisette V3 را وارد کنید";
+"Recommended: jkcoxson (Windows ADI) or StikStore (Windows ADI)" = "پیشنهادی: jkcoxson (Windows ADI) یا StikStore (Windows ADI)";
 "Clean Up Keychain" = "پاک‌سازی Keychain";
 "If something went wrong during signing in, please try to clean up the keychain, repoen the app and try again. \n \nIf you use SideStore and are already signed in, please also try exporting SideStore Account from SideStore settings and import it here to sign in." = "اگر هنگام ورود مشکلی پیش آمد، Keychain را پاک کنید، اپ را دوباره باز کنید و دوباره تلاش کنید.\n\nاگر از SideStore استفاده می‌کنید و قبلاً وارد شده‌اید، اکانت SideStore را از تنظیمات آن export کنید و اینجا import کنید.";
 "Error" = "خطا";
