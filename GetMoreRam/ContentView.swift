@@ -1,8 +1,6 @@
 //
 //  ContentView.swift
-//  GetMoreRam
-//
-//  Created by s s on 2025/3/14.
+//  ram 6itoon
 //
 
 import SwiftUI
@@ -19,14 +17,9 @@ struct ContentView: View {
                     Label("Settings".loc, systemImage: "gearshape.fill")
                 }
         }
-
+        .tint(Theme.accent)
+        .preferredColorScheme(.dark)
         .environmentObject(DataManager.shared.model)
-        
-
-    }
-    
-    func test() {
-        
     }
 }
 
