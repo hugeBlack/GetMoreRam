@@ -1,13 +1,37 @@
 //
 //  Shared.swift
-//  GetMoreRam
+//  ram 6itoon
 //
-//  Created by s s on 2025/3/15.
-//
+
 import SwiftUI
 import StosSign_API
 import StosSign_Auth
 import StosSign_Common
+
+struct AnisetteServerOption: Identifiable, Hashable {
+    let id: String
+    let name: String
+    let url: String
+    let isCustom: Bool
+    
+    init(name: String, url: String, isCustom: Bool = false) {
+        self.id = isCustom ? "custom" : url
+        self.name = name
+        self.url = url
+        self.isCustom = isCustom
+    }
+}
+
+let presetAnisetteServers: [AnisetteServerOption] = [
+    .init(name: "jkcoxson (Windows ADI)", url: "https://ani.jkcoxson.com"),
+    .init(name: "jkcoxson (Mac ADI)", url: "https://mac-ani.jkcoxson.com"),
+    .init(name: "StikStore (Windows ADI)", url: "https://ani2.stikstore.app"),
+    .init(name: "SideStore", url: "https://ani.sidestore.io"),
+    .init(name: "SideStore (.app)", url: "https://ani.sidestore.app"),
+    .init(name: "nythepegasus", url: "https://ani.npeg.us"),
+    .init(name: "neoarz", url: "https://ani.neoarz.com"),
+    .init(name: "Custom…", url: "", isCustom: true),
+]
 
 class AlertHelper<T> : ObservableObject {
     @Published var show = false
@@ -33,7 +57,6 @@ class AlertHelper<T> : ObservableObject {
         DispatchQueue.main.async {
             self.show = false
         }
-
     }
 }
 typealias YesNoHelper = AlertHelper<Bool>
@@ -55,42 +78,36 @@ class InputHelper : AlertHelper<String> {
 extension String: @retroactive Error {}
 extension String: @retroactive LocalizedError {
     public var errorDescription: String? { return self }
-        
-//    private static var enBundle : Bundle? = {
-//        let language = "en"
-//        let path = Bundle.main.path(forResource:language, ofType: "lproj")
-//        let bundle = Bundle(path: path!)
-//        return bundle
-//    }()
     
     var loc: String {
-//        let message = NSLocalizedString(self, comment: "")
-//        if message != self {
-//            return message
-//        }
-//
-//        if let forcedString = String.enBundle?.localizedString(forKey: self, value: nil, table: nil){
-//            return forcedString
-//        }else {
-            return self
-//        }
+        let message = NSLocalizedString(self, comment: "")
+        if message != self {
+            return message
+        }
+        return self
     }
     
     func localizeWithFormat(_ arguments: CVarArg...) -> String{
         String.localizedStringWithFormat(self.loc, arguments)
     }
-    
 }
 
 class SharedModel: ObservableObject {
     @Published var isLogin = false
-    @AppStorage("AnisetteServer") var anisetteServerURL = "https://ani.sidestore.io"
+    @AppStorage("AnisetteServer") var anisetteServerURL = "https://ani.jkcoxson.com"
+    @AppStorage("AnisetteServerPresetId") var anisettePresetId = "https://ani.jkcoxson.com"
     var session: AppleAPISession?
     var account: Account?
     var team: Team?
     
     init() {
         AnisetteDataHelper.shared.url = URL(string: anisetteServerURL)
+    }
+    
+    func applyAnisetteServer(_ url: String) {
+        anisetteServerURL = url
+        AnisetteDataHelper.shared.url = URL(string: url)
+        AnisetteDataHelper.shared.resetClientInfo()
     }
 }
 
