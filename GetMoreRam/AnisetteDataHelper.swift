@@ -28,6 +28,10 @@ final class AnisetteDataHelper
     
     var menuAnisetteURL: String?
     
+    /// Optional client-info override (e.g. the Android string SideStore's nightly uses).
+    /// Empty/nil means "use whatever the server returns".
+    var customClientInfo: String?
+    
     static var shared: AnisetteDataHelper = AnisetteDataHelper()
     
     var loggingFunc: ((String)->Void)?
@@ -37,6 +41,15 @@ final class AnisetteDataHelper
         userAgent = nil
         mdLu = nil
         deviceId = nil
+    }
+    
+    /// Forgets the provisioned adi.pb and the device identifier, so the next
+    /// sign-in provisions from scratch. Needed whenever the server or the
+    /// client info changes, since an adi.pb only matches the setup it came from.
+    func resetADI() {
+        Keychain.shared.adiPb = nil
+        Keychain.shared.identifier = nil
+        resetClientInfo()
     }
     
     func getAnisetteData(refresh: Bool = false) async throws -> AnisetteData
@@ -369,6 +382,11 @@ final class AnisetteDataHelper
             self.printOut("Failed to fetch client_info: \(error). Using Windows fallback")
             self.clientInfo = "<PC> <Windows;6.2(0,0);9200> <com.apple.AuthKit/1 (com.apple.iTunes/12.12.4.1)>"
             self.userAgent = "akd/1.0 CFNetwork/808.1.4"
+        }
+        
+        if let custom = self.customClientInfo?.trimmingCharacters(in: .whitespacesAndNewlines), !custom.isEmpty {
+            self.printOut("Using custom client_info override")
+            self.clientInfo = custom
         }
         
         self.printOut("Client-Info: \(self.clientInfo!)")
