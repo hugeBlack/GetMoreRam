@@ -45,3 +45,9 @@
 "Sign in from Settings first." = "اول از تنظیمات وارد شو.";
 "If something went wrong during signing in, clean up the keychain, reopen the app and try again." = "اگر هنگام ورود مشکلی پیش آمد، Keychain را پاک‌سازی کن، اپ را دوباره باز کن و دوباره تلاش کن.";
 "If you use SideStore and are already signed in, you can also export your SideStore account from its settings and import it here." = "اگر از SideStore استفاده می‌کنی و قبلاً واردش شده‌ای، می‌توانی اکانت SideStore را از تنظیمات خودش export کنی و اینجا import کنی.";
+"Client Info (advanced)" = "Client Info (پیشرفته)";
+"Leave empty to use the server's value. If you change it, reset ADI and sign in again." = "خالی بگذار تا از مقدار سرور استفاده شود. اگر تغییرش دادی، ADI را ریست کن و دوباره وارد شو.";
+"Apply" = "اعمال";
+"Use Pixel 7 preset" = "استفاده از پیش‌فرض Pixel 7";
+"Reset ADI and sign out" = "ریست ADI و خروج";
+"ADI reset. Sign in again." = "ADI ریست شد. دوباره وارد شو.";
