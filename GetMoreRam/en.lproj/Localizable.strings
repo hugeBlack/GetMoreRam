@@ -45,3 +45,9 @@
 "Sign in from Settings first." = "Sign in from Settings first.";
 "If something went wrong during signing in, clean up the keychain, reopen the app and try again." = "If something went wrong during signing in, clean up the keychain, reopen the app and try again.";
 "If you use SideStore and are already signed in, you can also export your SideStore account from its settings and import it here." = "If you use SideStore and are already signed in, you can also export your SideStore account from its settings and import it here.";
+"Client Info (advanced)" = "Client Info (advanced)";
+"Leave empty to use the server's value. If you change it, reset ADI and sign in again." = "Leave empty to use the server's value. If you change it, reset ADI and sign in again.";
+"Apply" = "Apply";
+"Use Pixel 7 preset" = "Use Pixel 7 preset";
+"Reset ADI and sign out" = "Reset ADI and sign out";
+"ADI reset. Sign in again." = "ADI reset. Sign in again.";
