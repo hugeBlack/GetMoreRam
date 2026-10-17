@@ -23,10 +23,6 @@ struct SettingsView: View {
     @State private var isImportingSideStoreAccount = false
     @State private var customServerText = ""
     @State private var showCustomServerAlert = false
-    @State private var clientInfoText = ""
-    @State private var adiResetShow = false
-
-    static let pixelClientInfo = "<Pixel 7> <Android;14;UQ1A.240205.002> <com.apple.AuthKit/1 (com.apple.akd/1.0)>"
 
     private var selectedServerIsCustom: Bool {
         !presetAnisetteServers.contains { !$0.isCustom && $0.url == sharedModel.anisetteServerURL }
@@ -67,10 +63,6 @@ struct SettingsView: View {
             Button("Cancel".loc, role: .cancel) {}
         } message: {
             Text("Enter a full Anisette V3 server URL".loc)
-        }
-        .onAppear { clientInfoText = sharedModel.anisetteClientInfoOverride }
-        .alert("ADI reset. Sign in again.".loc, isPresented: $adiResetShow) {
-            Button("OK".loc, action: {})
         }
         .alert("Error".loc, isPresented: $errorShow){
             Button("OK".loc, action: {})
@@ -207,42 +199,6 @@ struct SettingsView: View {
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
-
-                fieldLabel("Client Info (advanced)".loc)
-                TextField("", text: $clientInfoText, axis: .vertical)
-                    .font(.system(.footnote, design: .monospaced))
-                    .textInputAutocapitalization(.never)
-                    .disableAutocorrection(true)
-                    .lineLimit(1...4)
-                    .fieldBackground()
-
-                Text("Leave empty to use the server's value. If you change it, reset ADI and sign in again.".loc)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                HStack(spacing: 10) {
-                    Button {
-                        clientInfoText = Self.pixelClientInfo
-                    } label: {
-                        Text("Use Pixel 7 preset".loc)
-                    }
-                    .buttonStyle(SecondaryButtonStyle())
-
-                    Button {
-                        applyClientInfo()
-                    } label: {
-                        Text("Apply".loc)
-                    }
-                    .buttonStyle(SecondaryButtonStyle())
-                }
-
-                Button {
-                    resetADIAndSignOut()
-                } label: {
-                    Label("Reset ADI and sign out".loc, systemImage: "arrow.counterclockwise")
-                }
-                .buttonStyle(SecondaryButtonStyle(tint: .orange))
             }
         }
     }
@@ -477,29 +433,6 @@ struct SettingsView: View {
                 viewModel.verificationCode.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         }
         return viewModel.isLoginInProgress
-    }
-    
-    func applyClientInfo() {
-        sharedModel.applyClientInfoOverride(clientInfoText)
-        signOutLocally()
-        adiResetShow = true
-    }
-    
-    func resetADIAndSignOut() {
-        AnisetteDataHelper.shared.resetADI()
-        signOutLocally()
-        adiResetShow = true
-    }
-    
-    private func signOutLocally() {
-        sharedModel.session = nil
-        sharedModel.account = nil
-        sharedModel.team = nil
-        sharedModel.isLogin = false
-        viewModel.availableTeams = []
-        viewModel.teamSelectionShow = false
-        email = ""
-        teamId = ""
     }
     
     func cleanUp() {

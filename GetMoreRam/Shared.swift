@@ -96,28 +96,18 @@ class SharedModel: ObservableObject {
     @Published var isLogin = false
     @AppStorage("AnisetteServer") var anisetteServerURL = "https://ani.jkcoxson.com"
     @AppStorage("AnisetteServerPresetId") var anisettePresetId = "https://ani.jkcoxson.com"
-    @AppStorage("AnisetteClientInfoOverride") var anisetteClientInfoOverride = ""
     var session: AppleAPISession?
     var account: Account?
     var team: Team?
     
     init() {
         AnisetteDataHelper.shared.url = URL(string: anisetteServerURL)
-        AnisetteDataHelper.shared.customClientInfo = anisetteClientInfoOverride
     }
     
     func applyAnisetteServer(_ url: String) {
         anisetteServerURL = url
         AnisetteDataHelper.shared.url = URL(string: url)
-        // An adi.pb provisioned on another server doesn't match this one.
-        AnisetteDataHelper.shared.resetADI()
-    }
-    
-    func applyClientInfoOverride(_ value: String) {
-        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
-        anisetteClientInfoOverride = trimmed
-        AnisetteDataHelper.shared.customClientInfo = trimmed
-        AnisetteDataHelper.shared.resetADI()
+        AnisetteDataHelper.shared.resetClientInfo()
     }
 }
 
