@@ -1,2 +1,6 @@
 .DS_Store
-xcuserdata
+build/
+dist/
+.build/
+*.xcuserstate
+xcuserdata/

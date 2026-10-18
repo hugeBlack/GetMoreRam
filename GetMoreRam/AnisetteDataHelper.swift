@@ -31,6 +31,16 @@ final class AnisetteDataHelper
     static var shared: AnisetteDataHelper = AnisetteDataHelper()
     
     var loggingFunc: ((String)->Void)?
+
+    private var configuredClientInfo = AuthenticationConfiguration.defaultClientInfo
+    private var configuredUserAgent = AuthenticationConfiguration.defaultUserAgent
+
+    func configure(_ configuration: AuthenticationConfiguration) {
+        url = configuration.serverURL
+        configuredClientInfo = configuration.clientInfo
+        configuredUserAgent = configuration.userAgent
+        resetClientInfo()
+    }
     
     func resetClientInfo() {
         clientInfo = nil
@@ -86,6 +96,7 @@ final class AnisetteDataHelper
             
             if v3 {
                 formattedJSON["deviceDescription"] = self.clientInfo!
+                formattedJSON["userAgent"] = self.userAgent!
                 formattedJSON["localUserID"] = self.mdLu!
                 formattedJSON["deviceUniqueIdentifier"] = self.deviceId!
                 
@@ -93,7 +104,7 @@ final class AnisetteDataHelper
                 let formatter = DateFormatter()
                 formatter.locale = Locale(identifier: "en_US_POSIX")
                 formatter.calendar = Calendar(identifier: .gregorian)
-                formatter.timeZone = TimeZone.current
+                formatter.timeZone = TimeZone(secondsFromGMT: 0)
                 formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss'Z'"
                 let dateString = formatter.string(from: Date())
                 formattedJSON["date"] = dateString
@@ -114,8 +125,7 @@ final class AnisetteDataHelper
                 self.printOut("Implementation-Version: \(version)")
             } else { self.printOut("No Implementation-Version header") }
             
-            self.printOut("Anisette used: \(formattedJSON)")
-            self.printOut("Original JSON: \(json)")
+            self.printOut("Received anisette headers (secret values omitted)")
             do {
                 let jsonData = try JSONEncoder().encode(formattedJSON)
                 let anisette = try JSONDecoder().decode(AnisetteData.self, from: jsonData)
@@ -347,8 +357,8 @@ final class AnisetteDataHelper
         
         self.printOut("Using custom client_info")
                         
-        self.clientInfo = "<iMac18,3> <macOS;27.0;26A5378j> <com.apple.AuthKit/1 (com.apple.akd/1.0)>"
-        self.userAgent = "AuthKit/1 (Macintosh; OS X 27.0) (com.apple.akd/1.0)"
+        self.clientInfo = configuredClientInfo
+        self.userAgent = configuredUserAgent
         self.printOut("Client-Info: \(self.clientInfo!)")
         self.printOut("User-Agent: \(self.userAgent!)")
         

@@ -20,11 +20,14 @@ struct AppIDEditView : View {
                 } label: {
                     Text("Add Increased Memory Limit")
                 }
+                .disabled(viewModel.isUpdating)
+                if viewModel.isUpdating { ProgressView("Updating capability…") }
             }
             
             Section {
                 Text(viewModel.result)
                     .font(.system(.subheadline, design: .monospaced))
+                    .textSelection(.enabled)
             } header: {
                 Text("Server Response")
             }

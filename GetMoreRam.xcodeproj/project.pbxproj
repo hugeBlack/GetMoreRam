@@ -286,7 +286,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_ASSET_PATHS = "\"GetMoreRam/Preview Content\"";
 				DEVELOPMENT_TEAM = 3C3YHUUV75;
 				ENABLE_PREVIEWS = YES;
@@ -303,7 +303,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.aigch.getMoreRam;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -318,7 +318,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_ASSET_PATHS = "\"GetMoreRam/Preview Content\"";
 				DEVELOPMENT_TEAM = 3C3YHUUV75;
 				ENABLE_PREVIEWS = YES;
@@ -335,7 +335,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.aigch.getMoreRam;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -370,10 +370,10 @@
 /* Begin XCRemoteSwiftPackageReference section */
 		4E9544CF30558D4400540EF8 /* XCRemoteSwiftPackageReference "StosSign" */ = {
 			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/stossy11/StosSign";
+			repositoryURL = "https://github.com/failury/StosSign";
 			requirement = {
-				branch = main;
-				kind = branch;
+				revision = a538ae6a97a738083b7ef395985976d74666777e;
+				kind = revision;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */

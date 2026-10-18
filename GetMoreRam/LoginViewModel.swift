@@ -77,9 +77,19 @@ class LoginViewModel: ObservableObject {
         }
 
         do {
+            let configuration = try DataManager.shared.model.authenticationConfiguration()
+            AnisetteDataHelper.shared.configure(configuration)
             let anisetteData = try await AnisetteDataHelper.shared.getAnisetteData()
 
-            let (account, session) = try await AppleAPI.shared.authenticate(appleID: appleID, password: password, anisetteData: anisetteData) { [weak self] completionHandler in
+            let (account, session) = try await AppleAPI.shared.authenticate(
+                appleID: appleID,
+                password: password,
+                anisetteData: anisetteData,
+                anisetteDataRefreshHandler: {
+                    try await AnisetteDataHelper.shared.getAnisetteData(refresh: true)
+                },
+                progressHandler: { text in logging(text: text) }
+            ) { [weak self] completionHandler in
                 guard let self else {
                     completionHandler(nil)
                     return

@@ -1,146 +1,64 @@
-name: Xcode - Build
+name: Build unsigned IPA
 
-on: 
+on:
   push:
   pull_request:
   workflow_dispatch:
-    inputs: 
-      release__nightly:
-        description: Create a nightly release
-        type: boolean
-        required: false
+
+permissions:
+  contents: read
 
 jobs:
   build:
-    name: Build using xcodebuild command
     runs-on: macos-latest
-    env:
-      scheme: GetMoreRam
-      archive_path: archive
-    outputs:
-      scheme: ${{ steps.scheme.outputs.scheme }}
-      archive_path: ${{ env.archive_path }}
-
     steps:
+      - uses: actions/checkout@v4
       - uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: '26.4'
-      - name: Checkout
-        uses: actions/checkout@v3
+          xcode-version: latest-stable
+      - name: Test authentication configuration
+        run: |
+          swiftc GetMoreRam/AuthenticationConfiguration.swift Tests/AuthenticationConfiguration/main.swift -o "$RUNNER_TEMP/configuration-tests"
+          "$RUNNER_TEMP/configuration-tests"
+      - name: Build unsigned archive
+        run: |
+          xcodebuild archive \
+            -project GetMoreRam.xcodeproj -scheme GetMoreRam \
+            -configuration Release -destination 'generic/platform=iOS' \
+            -archivePath build/GetMoreRam.xcarchive \
+            CODE_SIGN_IDENTITY='' CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
+      - name: Package IPA
+        run: |
+          mkdir -p build/ipa/Payload dist
+          cp -R build/GetMoreRam.xcarchive/Products/Applications/GetMoreRam.app build/ipa/Payload/
+          ditto -c -k --norsrc --keepParent build/ipa/Payload dist/GetMoreRam-WindowsAuth.ipa
+          shasum -a 256 dist/GetMoreRam-WindowsAuth.ipa > dist/GetMoreRam-WindowsAuth.ipa.sha256
+          unzip -t dist/GetMoreRam-WindowsAuth.ipa
+      - uses: actions/upload-artifact@v4
         with:
-          submodules: recursive
-      - name: Set Scheme
-        id: scheme
-        run: |
-          if [ $scheme = default ]
-          then
-            scheme_list=$(xcodebuild -list -json | tr -d "\n")
-            scheme=$(echo $scheme_list | ruby -e "require 'json'; puts JSON.parse(STDIN.gets)['project']['targets'][0]")
-            echo Using default scheme: $scheme
-          else
-            echo Using configured scheme: $scheme
-          fi
-          echo "scheme=$scheme" >> $GITHUB_OUTPUT
-      - name: Set filetype_parameter
-        id: filetype_parameter
-        run: |
-          filetype_parameter=`ls -A | grep -i \\.xcworkspace\$ && echo workspace || echo project`
-          echo "filetype_parameter=$filetype_parameter" >> $GITHUB_OUTPUT
-      - name: Set file_to_build
-        id: file_to_build
-        run: |
-          file_to_build=`ls -A | grep -i \\.xcworkspace\$ || ls -A | grep -i \\.xcodeproj\$`
-          file_to_build=`echo $file_to_build | awk '{$1=$1;print}'`
-          echo "file_to_build=$file_to_build" >> $GITHUB_OUTPUT
-      - name: Build
-        env:
-          scheme: ${{ steps.scheme.outputs.scheme }}
-          filetype_parameter: ${{ steps.filetype_parameter.outputs.filetype_parameter }}
-          file_to_build: ${{ steps.file_to_build.outputs.file_to_build }}
-        run: xcodebuild clean build -scheme "$scheme" -"$filetype_parameter" "$file_to_build" -sdk iphoneos -arch arm64 -configuration Release CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO | xcpretty && exit ${PIPESTATUS[0]}
-      - name: Analyze
-        env:
-          scheme: ${{ steps.scheme.outputs.scheme }}
-          filetype_parameter: ${{ steps.filetype_parameter.outputs.filetype_parameter }}
-          file_to_build: ${{ steps.file_to_build.outputs.file_to_build }}
-        run: xcodebuild analyze -scheme "$scheme" -"$filetype_parameter" "$file_to_build" -sdk iphoneos -arch arm64 -configuration Release CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO | xcpretty && exit ${PIPESTATUS[0]}
-      - name: Archive
-        env:
-          scheme: ${{ steps.scheme.outputs.scheme }}
-          filetype_parameter: ${{ steps.filetype_parameter.outputs.filetype_parameter }}
-          file_to_build: ${{ steps.file_to_build.outputs.file_to_build }}
-        run: xcodebuild archive -archivePath "$archive_path" -scheme "$scheme" -"$filetype_parameter" "$file_to_build" -sdk iphoneos -arch arm64 -configuration Release CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO | xcpretty && exit ${PIPESTATUS[0]}
-      - name: Tar Build Artifact
-        run: tar -cvf "$archive_path.xcarchive.tar" "$archive_path.xcarchive"
-      - name: Upload a Build Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ env.archive_path }}.xcarchive.tar
-          path: ${{ env.archive_path }}.xcarchive.tar
+          name: GetMoreRam-WindowsAuth
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 30
 
-  package:
-    name: Create fake-signed ipa
+  release:
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
+    needs: build
     runs-on: ubuntu-latest
-    needs: [build]
-    env:
-      scheme: ${{ needs.build.outputs.scheme }}
-      archive_path: ${{ needs.build.outputs.archive_path }}
-    outputs:
-      artifact: ${{ env.scheme }}.ipa
-
-    steps:
-      - name: Download a Build Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: ${{ env.archive_path }}.xcarchive.tar
-      - name: Extract Build Artifact
-        run: tar -xf "$archive_path.xcarchive.tar"
-      - name: Install ldid
-        run: |
-          if [ `uname -s` = "Linux" ]; then
-            curl -sSL -o /usr/local/bin/ldid "${{ github.server_url }}/ProcursusTeam/ldid/releases/latest/download/ldid_linux_`uname -m`"
-            chmod +x /usr/local/bin/ldid
-          elif [ `uname -s` = "Darwin" ]; then
-            brew install ldid
-          else
-            exit 1
-          fi
-      - name: Fakesign
-        run: |
-          find "$archive_path.xcarchive/Products/Applications/$scheme.app" -type d -path '*/Frameworks/*.framework' -exec ldid -S \{\} \;
-          ldid -S "$archive_path.xcarchive/Products/Applications/$scheme.app"
-      - name: Create IPA
-        run: |
-          mv "$archive_path.xcarchive/Products/Applications" Payload
-          zip -r "$scheme.ipa" "Payload" -x "._*" -x ".DS_Store" -x "__MACOSX"
-      - name: Upload a Build Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ env.scheme }}.ipa
-          path: ${{ env.scheme }}.ipa
-
-  release__nightly:
-    name: Nightly Release
     permissions:
       contents: write
-    if: inputs.release__nightly || github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
-    runs-on: ubuntu-latest
-    needs: [package]
-    concurrency:
-      group: release__nightly
-      cancel-in-progress: true
-
     steps:
-      - name: Download a Build Artifact
-        uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v4
         with:
-          name: ${{ needs.package.outputs.artifact }}
-      - name: Nightly Release
-        uses: andelf/nightly-release@v1
+          name: GetMoreRam-WindowsAuth
+          path: dist
+      - name: Publish installable download
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with: 
-          body: |
-            This is a nightly release [created automatically with GitHub Actions workflow](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}).
-          files: |
-            ${{ needs.package.outputs.artifact }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: windows-auth-${{ github.run_number }}
+          COMMIT: ${{ github.sha }}
+        run: |
+          gh release create "$RELEASE_TAG" dist/* --target "$COMMIT" \
+            --title "GetMoreRam Windows authentication ($RELEASE_TAG)" \
+            --notes 'Unsigned arm64 IPA. Install through SideStore. Defaults use the Windows/iTunes client info and akd/1.0 CFNetwork/808.1.4 user agent. Apple ID sign-in and Increased Memory Limit registration still require testing on your iPhone.'

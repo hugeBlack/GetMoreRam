@@ -31,10 +31,9 @@
     {
       "identity" : "stossign",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/stossy11/StosSign",
+      "location" : "https://github.com/failury/StosSign",
       "state" : {
-        "branch" : "main",
-        "revision" : "01dd7bc4f5084ade9e2ebbc7e338dc2e3f454d77"
+        "revision" : "a538ae6a97a738083b7ef395985976d74666777e"
       }
     },
     {
