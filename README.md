@@ -10,6 +10,7 @@ A simple [StosSign](https://github.com/stossy11/StosSign) wrapper app that allow
 6. Tap "Add Increased Memory Limit"
 7. Reinstall the app from SideStore/AltStore
 8. Check if you have "Increased Memory Limit"
+9. If you encounter an error, replace the URL with this: "https://mac-ani.jkcoxson.com"
 
 # Credits
 Stossy11 - For StosSign.

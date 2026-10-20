@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import UIKit
 import UniformTypeIdentifiers
 import StosSign_API
 import StosSign_Auth
@@ -59,7 +60,15 @@ struct SettingsView: View {
                     Spacer()
                     TextField("", text: $sharedModel.anisetteServerURL)
                         .multilineTextAlignment(.trailing)
+                        .onChange(of: sharedModel.anisetteServerURL) { newValue in
+                            // Apply right away, so the next sign-in provisions and
+                            // signs in against the newly selected server.
+                            AnisetteDataHelper.shared.url = URL(string: newValue)
+                            AnisetteDataHelper.shared.resetClientInfo()
+                        }
                 }
+            } footer: {
+                Text("The server also decides which client identity is sent to Apple, so pick one that reports a working identity. https://ani.jkcoxson.com (default), https://ani.sidestore.io and https://ani2.stikstore.app are known anisette v3 servers.")
             }
             
             Section {
@@ -136,6 +145,19 @@ struct SettingsView: View {
                 Section {
                     Text(viewModel.logs)
                         .font(.system(.subheadline, design: .monospaced))
+                        .textSelection(.enabled)
+
+                    Button {
+                        UIPasteboard.general.string = viewModel.logs
+                    } label: {
+                        Label("Copy Logs", systemImage: "doc.on.doc")
+                    }
+                    .disabled(viewModel.logs.isEmpty)
+
+                    ShareLink(item: viewModel.logs) {
+                        Label("Share Logs", systemImage: "square.and.arrow.up")
+                    }
+                    .disabled(viewModel.logs.isEmpty)
                 } header: {
                     Text("Debugging")
                 }
@@ -220,6 +242,7 @@ struct SettingsView: View {
             return
         } catch {
             errorInfo = error.detailedDescription
+            viewModel.logs.append("\n[ERROR] \(errorInfo)\n")
             errorShow = true
         }
     }
