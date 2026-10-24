@@ -84,13 +84,12 @@ extension String: @retroactive LocalizedError {
 
 class SharedModel: ObservableObject {
     @Published var isLogin = false
-    @AppStorage("AnisetteServer") var anisetteServerURL = "https://ani.sidestore.io"
     var session: AppleAPISession?
     var account: Account?
     var team: Team?
     
     init() {
-        AnisetteDataHelper.shared.url = URL(string: anisetteServerURL)
+        AnisetteDataHelper.shared.url = URL(string: AuthenticationSettings.shared.selectedServerAddress)
     }
 }
 

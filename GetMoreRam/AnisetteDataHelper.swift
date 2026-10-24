@@ -28,9 +28,23 @@ final class AnisetteDataHelper
     
     var menuAnisetteURL: String?
     
+    // Headers chosen in Settings
+    var configuredClientInfo: String?
+    var configuredUserAgent: String?
+    var useServerClientInfo = false
+    
     static var shared: AnisetteDataHelper = AnisetteDataHelper()
     
     var loggingFunc: ((String)->Void)?
+    
+    /// Applies the server and headers chosen in Settings. Call before each sign-in.
+    func configure(server: URL, clientInfo: String, userAgent: String, useServerClientInfo: Bool) {
+        self.url = server
+        self.configuredClientInfo = clientInfo
+        self.configuredUserAgent = userAgent
+        self.useServerClientInfo = useServerClientInfo
+        resetClientInfo()
+    }
     
     func resetClientInfo() {
         clientInfo = nil
@@ -39,6 +53,48 @@ final class AnisetteDataHelper
         deviceId = nil
     }
     
+    // MARK: - Identity formats
+    //
+    // GetMoreRam stores the anisette identifier as base64 of 16 random bytes, sends it as is to the
+    // anisette server and derives X-Apple-I-MD-LU = SHA256(bytes). SideStore 2.0 stores a UUID string,
+    // sends the UUID bytes as lowercase hex and uses fixed defaults for LU and routing info
+    // (see SideSign RemoteAnisetteDataProvider and AnisetteKit). An identity imported from SideStore
+    // must be presented exactly like SideStore does, otherwise the server/Apple don't recognise it.
+    static let sideStoreDefaultLocalUserID = "0000000000000000000000000000000000000000000000000000000000000001"
+    static let sideStoreDefaultRoutingInfo = "17106176"
+
+    /// The identifier, when it uses SideStore 2.0's UUID format
+    var sideStoreIdentifier: UUID? {
+        Keychain.shared.identifier.flatMap { UUID(uuidString: $0) }
+    }
+
+    /// The identifier as the anisette server expects it
+    func serverIdentifier(_ identifier: String) -> String {
+        guard let uuid = UUID(uuidString: identifier) else { return identifier }
+        return withUnsafeBytes(of: uuid.uuid) { Data($0) }.map { String(format: "%02x", $0) }.joined()
+    }
+
+    /// What an identity was provisioned for. The macOS-ADI servers take each other's identities,
+    /// so they share one; any other server keeps its own.
+    var provisioningContext: String {
+        let server = AnisetteServer(name: "", address: self.url!.absoluteString)
+        let group = server.library == .mac ? "mac-adi" : self.url!.absoluteString
+        return "\(group)|\(self.clientInfo!)"
+    }
+
+    /// Whether the server makes its data with Apple's Android ADI library, judged from the client it
+    /// hands out (a stock Mac or an Android phone, as anisette-v3-server and omnisette do). nil if unknown.
+    func serverRunsAndroidADI(_ server: URL) async -> Bool? {
+        var request = URLRequest(url: server.appendingPathComponent("v3").appendingPathComponent("client_info"))
+        request.timeoutInterval = 10
+        guard let (data, _) = try? await URLSession.shared.data(for: request),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let client = json["client_info"] as? String else { return nil }
+        self.printOut("Server client_info: \(client)")
+        let stockClients = ["<MacBookPro13,2> <macOS;13.1;22C65>", "<MacBookPro15,1> <Mac OS X;10.15.2;19C57>"]
+        return stockClients.contains { client.hasPrefix($0) } || client.contains("<Android;")
+    }
+
     func getAnisetteData(refresh: Bool = false) async throws -> AnisetteData
     {
         
@@ -47,6 +103,17 @@ final class AnisetteDataHelper
         }
         
         self.printOut("Anisette URL: \(self.url!.absoluteString)")
+        
+        // Apple checks that Client-Info / User-Agent match the identity that provisioned
+        // the anisette data, so provision again when the server or headers changed.
+        try await fetchClientInfo()
+        let context = provisioningContext
+        if Keychain.shared.adiPb != nil,
+           let previousContext = Keychain.shared.adiPbProvisioningContext,
+           previousContext != context {
+            self.printOut("Server or client info changed since provisioning, provisioning again")
+            Keychain.shared.adiPb = nil
+        }
         
         let ans : AnisetteData
         if let identifier = Keychain.shared.identifier,
@@ -70,6 +137,10 @@ final class AnisetteDataHelper
                     self.printOut("Error getting V3 headers: \(message ?? "no message")")
                     if let message = message,
                        message.contains("-45061") {
+                        if Keychain.shared.adiPbProvisioningContext == nil {
+                            // Imported (e.g. from SideStore) for another server: make a new one, like SideStore's "Reset adi.pb"
+                            self.printOut("The imported anisette identity is not provisioned on \(self.url!.absoluteString), provisioning a new one (Apple will ask for a code)")
+                        }
                         self.printOut("Error message contains -45061 (not provisioned), resetting adi.pb and retrying")
                         Keychain.shared.adiPb = nil
                         return try await provision()
@@ -83,6 +154,9 @@ final class AnisetteDataHelper
             if let machineID = json["X-Apple-I-MD-M"] { formattedJSON["machineID"] = machineID }
             if let oneTimePassword = json["X-Apple-I-MD"] { formattedJSON["oneTimePassword"] = oneTimePassword }
             if let routingInfo = json["X-Apple-I-MD-RINFO"] { formattedJSON["routingInfo"] = routingInfo }
+            if v3, sideStoreIdentifier != nil {
+                formattedJSON["routingInfo"] = Self.sideStoreDefaultRoutingInfo
+            }
             
             if v3 {
                 formattedJSON["deviceDescription"] = self.clientInfo!
@@ -99,6 +173,11 @@ final class AnisetteDataHelper
                 formattedJSON["date"] = dateString
                 formattedJSON["locale"] = Locale.current.identifier
                 formattedJSON["timeZone"] = TimeZone.current.abbreviation()
+                if sideStoreIdentifier != nil {
+                    // AnisetteKit defaults
+                    formattedJSON["locale"] = "en_US"
+                    formattedJSON["timeZone"] = "UTC"
+                }
             } else {
                 if let deviceDescription = json["X-MMe-Client-Info"] { formattedJSON["deviceDescription"] = deviceDescription }
                 if let localUserID = json["X-Apple-I-MD-LU"] { formattedJSON["localUserID"] = localUserID }
@@ -147,7 +226,7 @@ final class AnisetteDataHelper
             self.printOut("Getting provisioning URLs")
             var request = self.buildAppleRequest(url: URL(string: "https://gsa.apple.com/grandslam/GsService2/lookup")!)
             request.httpMethod = "GET"
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await Authentication.dataRetryingUnavailable(for: request, session: URLSession.shared)
         if
            let plist = try? PropertyListSerialization.propertyList(from: data, format: nil) as? Dictionary<String, Dictionary<String, Any>>,
            let startProvisioningString = plist["urls"]?["midStartProvisioning"] as? String,
@@ -218,7 +297,7 @@ final class AnisetteDataHelper
         switch result {
         case "GiveIdentifier":
             self.printOut("Giving identifier")
-            try await socket.sendJSON(["identifier": Keychain.shared.identifier!])
+            try await socket.sendJSON(["identifier": serverIdentifier(Keychain.shared.identifier!)])
             
         case "GiveStartProvisioningData":
             self.printOut("Getting start provisioning data")
@@ -243,6 +322,7 @@ final class AnisetteDataHelper
                 throw "The server didn't give us an adi.pb file"
             }
             Keychain.shared.adiPb = adiPb
+            Keychain.shared.adiPbProvisioningContext = provisioningContext
             return true
             
         default:
@@ -264,7 +344,7 @@ final class AnisetteDataHelper
         request.httpMethod = "POST"
         request.httpBody = try PropertyListSerialization.data(fromPropertyList: body, format: .xml, options: 0)
         
-        let (data, _) = try await URLSession.shared.data(for: request)
+        let (data, _) = try await Authentication.dataRetryingUnavailable(for: request, session: URLSession.shared)
         if let plist = try? PropertyListSerialization.propertyList(from: data, format: nil) as? Dictionary<String, Dictionary<String, Any>>,
            let spim = plist["Response"]?["spim"] as? String {
             return spim
@@ -285,7 +365,7 @@ final class AnisetteDataHelper
         request.httpMethod = "POST"
         request.httpBody = try PropertyListSerialization.data(fromPropertyList: body, format: .xml, options: 0)
         
-        let (data, _) = try await URLSession.shared.data(for: request)
+        let (data, _) = try await Authentication.dataRetryingUnavailable(for: request, session: URLSession.shared)
         if let plist = try? PropertyListSerialization.propertyList(from: data, format: nil) as? Dictionary<String, Dictionary<String, Any>>,
            let ptm = plist["Response"]?["ptm"] as? String,
            let tk = plist["Response"]?["tk"] as? String {
@@ -345,10 +425,24 @@ final class AnisetteDataHelper
             return
         }
         
-        self.printOut("Using custom client_info")
-                        
-        self.clientInfo = "<iMac18,3> <macOS;27.0;26A5378j> <com.apple.AuthKit/1 (com.apple.akd/1.0)>"
-        self.userAgent = "AuthKit/1 (Macintosh; OS X 27.0) (com.apple.akd/1.0)"
+        if useServerClientInfo {
+            self.printOut("Fetching client_info from the anisette server")
+            let clientInfoURL = self.url!.appendingPathComponent("v3").appendingPathComponent("client_info")
+            var request = URLRequest(url: clientInfoURL)
+            request.timeoutInterval = 15
+            let (data, _) = try await URLSession.shared.data(for: request)
+            guard let json = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: String],
+                  let clientInfo = json["client_info"],
+                  let userAgent = json["user_agent"] else {
+                throw "Couldn't fetch client info from the anisette server (v1 servers are not supported)"
+            }
+            self.clientInfo = clientInfo
+            self.userAgent = userAgent
+        } else {
+            self.printOut("Using custom client_info")
+            self.clientInfo = configuredClientInfo ?? HeaderPreset.currentMac.clientInfo
+            self.userAgent = configuredUserAgent ?? HeaderPreset.currentMac.userAgent
+        }
         self.printOut("Client-Info: \(self.clientInfo!)")
         self.printOut("User-Agent: \(self.userAgent!)")
         
@@ -365,11 +459,19 @@ final class AnisetteDataHelper
             Keychain.shared.identifier = Data(bytes: &bytes, count: bytes.count).base64EncodedString()
         }
         
-        let decoded = Data(base64Encoded: Keychain.shared.identifier!)!
-        self.mdLu = decoded.sha256().hexEncodedString()
+        if let uuid = sideStoreIdentifier {
+            self.printOut("Using SideStore 2.0 identity format")
+            self.mdLu = Self.sideStoreDefaultLocalUserID
+            self.deviceId = uuid.uuidString.uppercased()
+        } else {
+            guard let decoded = Data(base64Encoded: Keychain.shared.identifier!), decoded.count == 16 else {
+                throw "Invalid anisette identifier in the keychain. Tap \"Clean Up Keychain\" and try again."
+            }
+            self.mdLu = decoded.sha256().hexEncodedString()
+            let uuid: UUID = decoded.object()
+            self.deviceId = uuid.uuidString.uppercased()
+        }
         self.printOut("X-Apple-I-MD-LU: \(self.mdLu!)")
-        let uuid: UUID = decoded.object()
-        self.deviceId = uuid.uuidString.uppercased()
         self.printOut("X-Mme-Device-Id: \(self.deviceId!)")
 
         // Client info on Anisette Servers are out of date for latest GSA
@@ -423,12 +525,21 @@ final class AnisetteDataHelper
         let url = menuAnisetteURL
         var request = URLRequest(url: self.url!.appendingPathComponent("v3").appendingPathComponent("get_headers"))
         request.httpMethod = "POST"
+        request.timeoutInterval = 20
         request.httpBody = try! JSONSerialization.data(withJSONObject: [
-            "identifier": identifier,
+            "identifier": serverIdentifier(identifier),
             "adi_pb": adiPb
         ], options: [])
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        let (data, response) = try await URLSession.shared.data(for: request)
+        // Some servers answer part of the requests with a 5xx (new.ani.sidestore.io, 2026-10-23): ask again
+        var attempt = 0
+        var (data, response) = try await URLSession.shared.data(for: request)
+        while let status = (response as? HTTPURLResponse)?.statusCode, (500..<600).contains(status), attempt < 2 {
+            attempt += 1
+            self.printOut("get_headers answered HTTP \(status), asking again")
+            try await Task.sleep(nanoseconds: 1_000_000_000)
+            (data, response) = try await URLSession.shared.data(for: request)
+        }
         
         return try await self.extractAnisetteData(data, response as? HTTPURLResponse, v3: true)
 

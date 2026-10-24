@@ -58,12 +58,23 @@ class LoginViewModel: ObservableObject {
         isAuthenticationCancellationRequested = false
         
         func logging(text: String) {
+            NSLog("[GetMoreRam] %@", text)
             Task { @MainActor [weak self] in
                 self?.logs.append("\(text)\n")
             }
         }
         
         AnisetteDataHelper.shared.loggingFunc = logging
+        
+        let settings = AuthenticationSettings.shared
+        Authentication.userAgentOverride = settings.useServerClientInfo ? nil : settings.effectiveGrandSlamUserAgent
+        Authentication.twoFactorUserAgentOverride = nil
+        Authentication.useSideSignRequestFormat = false
+        Authentication.xcodeVersion = "27.0 (27A5218g)"
+        Authentication.progressHandler = logging
+        Authentication.anisetteDataRefreshHandler = {
+            try await AnisetteDataHelper.shared.getAnisetteData(refresh: true)
+        }
 
         defer {
             verificationCodeHandler = nil
@@ -77,7 +88,18 @@ class LoginViewModel: ObservableObject {
         }
 
         do {
-            let anisetteData = try await AnisetteDataHelper.shared.getAnisetteData()
+            let anisetteData = try await fetchAnisetteData(settings: settings, logging: logging)
+            if settings.useServerClientInfo {
+                // Use the server's user agent for GrandSlam too
+                Authentication.userAgentOverride = AnisetteDataHelper.shared.userAgent
+            }
+            if AnisetteDataHelper.shared.sideStoreIdentifier != nil {
+                // Identity imported from SideStore 2.0: send exactly what SideSign sends
+                logging(text: "SideStore identity: using SideSign request format")
+                Authentication.useSideSignRequestFormat = true
+                Authentication.twoFactorUserAgentOverride = "Xcode"
+                Authentication.xcodeVersion = "26.0 (26A242)"
+            }
 
             let (account, session) = try await AppleAPI.shared.authenticate(appleID: appleID, password: password, anisetteData: anisetteData) { [weak self] completionHandler in
                 guard let self else {
@@ -109,8 +131,45 @@ class LoginViewModel: ObservableObject {
                 throw CancellationError()
             }
             print(error)
+            if error.localizedDescription.contains("-80046") {
+                logging(text: "Apple refused the token (-80046). Use a macOS-ADI server (SideStore (New), jkcoxson…) with the \"macOS current Mac\" preset, then tap \"Clean Up Keychain\" and sign in again.")
+            }
             throw error
         }
+    }
+
+    /// Tries the selected anisette server, then the other ones if fallback is enabled.
+    private func fetchAnisetteData(settings: AuthenticationSettings, logging: (String) -> Void) async throws -> AnisetteData {
+        let servers = settings.serversToTry
+        guard !servers.isEmpty else {
+            throw "No anisette server configured. Add one in Settings."
+        }
+        
+        var lastError: Error?
+        for server in servers {
+            guard let url = URL(string: server.address) else { continue }
+            try Task.checkCancellation()
+            logging("Trying anisette server \(server.name) (\(server.address))")
+            if server.library != .mac, await AnisetteDataHelper.shared.serverRunsAndroidADI(url) == true {
+                // Apple takes the password and the code, then refuses the token (-80046)
+                logging("Skipping \(server.address): it runs Apple's Android ADI library, whose token Apple refuses (-80046). Use a macOS-ADI server.")
+                lastError = "\(server.name) runs Apple's Android ADI library, which Apple refuses since October 21 (-80046). Pick a macOS-ADI server such as SideStore (New) in Settings › Anisette Servers."
+                continue
+            }
+            AnisetteDataHelper.shared.configure(
+                server: url,
+                clientInfo: settings.clientInfo,
+                userAgent: settings.userAgent,
+                useServerClientInfo: settings.useServerClientInfo
+            )
+            do {
+                return try await AnisetteDataHelper.shared.getAnisetteData()
+            } catch {
+                logging("Anisette server \(server.address) failed: \(error.localizedDescription)")
+                lastError = error
+            }
+        }
+        throw lastError ?? "No anisette server could be reached"
     }
 
     private func prepareForVerification(using handler: @escaping (String?) -> Void) {

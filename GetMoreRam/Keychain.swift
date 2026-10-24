@@ -81,6 +81,10 @@ public class Keychain
     @KeychainItem(key: "adiPb")
     public var adiPb: String?
     
+    /// "<server URL>|<client info>" the current adi.pb was provisioned with
+    @KeychainItem(key: "adiPbProvisioningContext")
+    public var adiPbProvisioningContext: String?
+    
     private init()
     {
     }

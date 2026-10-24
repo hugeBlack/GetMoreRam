@@ -1,77 +1,68 @@
 {
-  "originHash" : "ed9d94c0e0395c6c77989790d2b73286f1df7389f304b9e380243fcd64d81d9b",
-  "pins" : [
+  "originHash": "ed9d94c0e0395c6c77989790d2b73286f1df7389f304b9e380243fcd64d81d9b",
+  "pins": [
     {
-      "identity" : "big-num",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/adam-fowler/big-num",
-      "state" : {
-        "revision" : "9059dcab8dd001b8143bc512b4477d079e97957f",
-        "version" : "2.0.3"
+      "identity": "big-num",
+      "kind": "remoteSourceControl",
+      "location": "https://github.com/adam-fowler/big-num",
+      "state": {
+        "revision": "9059dcab8dd001b8143bc512b4477d079e97957f",
+        "version": "2.0.3"
       }
     },
     {
-      "identity" : "cryptoswift",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/krzyzanowskim/CryptoSwift",
-      "state" : {
-        "revision" : "f2a627b84c1ff96f21ac2fcb623ab36142dd5512",
-        "version" : "1.10.0"
+      "identity": "cryptoswift",
+      "kind": "remoteSourceControl",
+      "location": "https://github.com/krzyzanowskim/CryptoSwift",
+      "state": {
+        "revision": "f2a627b84c1ff96f21ac2fcb623ab36142dd5512",
+        "version": "1.10.0"
       }
     },
     {
-      "identity" : "openssl",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/krzyzanowskim/OpenSSL",
-      "state" : {
-        "revision" : "4b1188ba947ddc23d03b13096b9e44b804e146c9",
-        "version" : "3.6.3000"
+      "identity": "openssl",
+      "kind": "remoteSourceControl",
+      "location": "https://github.com/krzyzanowskim/OpenSSL",
+      "state": {
+        "revision": "4b1188ba947ddc23d03b13096b9e44b804e146c9",
+        "version": "3.6.3000"
       }
     },
     {
-      "identity" : "stossign",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/stossy11/StosSign",
-      "state" : {
-        "branch" : "main",
-        "revision" : "01dd7bc4f5084ade9e2ebbc7e338dc2e3f454d77"
+      "identity": "swift-asn1",
+      "kind": "remoteSourceControl",
+      "location": "https://github.com/apple/swift-asn1.git",
+      "state": {
+        "revision": "d9a5b37470adc940d22c3bcd5ca6953a516b727f",
+        "version": "1.7.2"
       }
     },
     {
-      "identity" : "swift-asn1",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/apple/swift-asn1.git",
-      "state" : {
-        "revision" : "d9a5b37470adc940d22c3bcd5ca6953a516b727f",
-        "version" : "1.7.2"
+      "identity": "swift-certificates",
+      "kind": "remoteSourceControl",
+      "location": "https://github.com/apple/swift-certificates.git",
+      "state": {
+        "revision": "c8aece90ea05f9866bd392a5bf13b5cae56c0e03",
+        "version": "1.20.0"
       }
     },
     {
-      "identity" : "swift-certificates",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/apple/swift-certificates.git",
-      "state" : {
-        "revision" : "c8aece90ea05f9866bd392a5bf13b5cae56c0e03",
-        "version" : "1.20.0"
+      "identity": "swift-crypto",
+      "kind": "remoteSourceControl",
+      "location": "https://github.com/apple/swift-crypto",
+      "state": {
+        "revision": "da9d28d69ebe3894b18376c8f2395c2f37b8448f",
+        "version": "4.5.2"
       }
     },
     {
-      "identity" : "swift-crypto",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/apple/swift-crypto",
-      "state" : {
-        "revision" : "da9d28d69ebe3894b18376c8f2395c2f37b8448f",
-        "version" : "4.5.2"
-      }
-    },
-    {
-      "identity" : "swift-srp",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/adam-fowler/swift-srp.git",
-      "state" : {
-        "revision" : "ce202c48f8ca68f44b71732f945eb8221d6fe135"
+      "identity": "swift-srp",
+      "kind": "remoteSourceControl",
+      "location": "https://github.com/adam-fowler/swift-srp.git",
+      "state": {
+        "revision": "ce202c48f8ca68f44b71732f945eb8221d6fe135"
       }
     }
   ],
-  "version" : 3
+  "version": 3
 }

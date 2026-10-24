@@ -1,0 +1,5 @@
+module StosSign_CodeSign {
+    header "CodeSigner.h"
+    export *
+}
+
