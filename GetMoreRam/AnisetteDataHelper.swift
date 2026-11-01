@@ -26,6 +26,32 @@ final class AnisetteDataHelper
     // How many different servers to try before giving up
     static let maxServerAttempts = 5
     
+    // Which kind of ADI provisioned the adi.pb in the keychain. adi.pb made by
+    // Android-based servers gets error -80045 from Apple, so it is discarded.
+    private static let adiPlatformKey = "AnisetteADIPlatform"
+    static let macADIPlatform = "mac"
+    static let importedADIPlatform = "imported"
+    
+    static var adiPlatform: String? {
+        get { UserDefaults.standard.string(forKey: adiPlatformKey) }
+        set { UserDefaults.standard.set(newValue, forKey: adiPlatformKey) }
+    }
+    
+    // Server that provisioned the stored adi.pb. Not every server can read
+    // every other server's adi.pb (e.g. anisette.lillq.me uses another format).
+    private static let adiSourceKey = "AnisetteADISource"
+    static var adiSource: String? {
+        get { UserDefaults.standard.string(forKey: adiSourceKey) }
+        set { UserDefaults.standard.set(newValue, forKey: adiSourceKey) }
+    }
+    
+    /// Drops the stored adi.pb so the next sign in provisions a fresh one.
+    func resetProvisioning() {
+        Keychain.shared.adiPb = nil
+        Self.adiPlatform = nil
+        Self.adiSource = nil
+    }
+    
     private let anisetteSession: URLSession = {
         let config = URLSessionConfiguration.default
         config.timeoutIntervalForRequest = 15
@@ -58,6 +84,13 @@ final class AnisetteDataHelper
     /// - Parameter excluding: server addresses not to use (e.g. one whose data Apple just rejected)
     func getAnisetteData(excluding: Set<String> = []) async throws -> AnisetteData
     {
+        if Keychain.shared.adiPb != nil,
+           Self.adiPlatform != Self.macADIPlatform,
+           Self.adiPlatform != Self.importedADIPlatform {
+            self.printOut("Stored adi.pb wasn't provisioned by a Mac anisette server, provisioning a new one (Apple may ask for a verification code again)")
+            resetProvisioning()
+        }
+        
         let pool = AnisetteServerPool.shared
         var tried = Set(excluding.map(AnisetteServerPool.normalize))
         var failures: [String] = []
@@ -136,7 +169,11 @@ final class AnisetteDataHelper
                     if let message = message,
                        message.contains("-45061") {
                         self.printOut("Error message contains -45061 (not provisioned), resetting adi.pb and retrying")
-                        Keychain.shared.adiPb = nil
+                        resetProvisioning()
+                        return try await provision()
+                    } else if Self.adiSource.map(AnisetteServerPool.normalize) != self.url.map({ AnisetteServerPool.normalize($0.absoluteString) }) {
+                        self.printOut("This server can't use the adi.pb another server made, provisioning a new one here")
+                        resetProvisioning()
                         return try await provision()
                     } else { throw message ?? "Unknown error" }
                 }
@@ -308,6 +345,8 @@ final class AnisetteDataHelper
                 throw "The server didn't give us an adi.pb file"
             }
             Keychain.shared.adiPb = adiPb
+            Self.adiPlatform = Self.macADIPlatform
+            Self.adiSource = self.url?.absoluteString
             return true
             
         default:

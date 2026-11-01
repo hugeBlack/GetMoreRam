@@ -271,7 +271,7 @@ struct SettingsView: View {
     }
     
     func cleanUp() {
-        Keychain.shared.adiPb = nil
+        AnisetteDataHelper.shared.resetProvisioning()
         Keychain.shared.identifier = nil
         Keychain.shared.appleIDPassword = nil
         Keychain.shared.appleIDEmailAddress = nil

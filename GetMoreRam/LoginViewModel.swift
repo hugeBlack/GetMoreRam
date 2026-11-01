@@ -129,10 +129,20 @@ class LoginViewModel: ObservableObject {
                     self.prepareForVerification(using: completionHandler)
                 }
             } catch {
+                if Self.isRejectedAnisette(error) {
+                    // Apple refused this anisette identity; provision a fresh one next time
+                    AnisetteDataHelper.shared.resetProvisioning()
+                }
+                
                 guard attempt < Self.maxSignInAttempts,
                       !isAuthenticationCancellationRequested,
                       !didRequestVerificationCode,
-                      Self.isAnisetteRelated(error) else {
+                      Self.isAnisetteRelated(error),
+                      // Apple rejecting the identity twice in a row won't be fixed by hammering it
+                      !(Self.isRejectedAnisette(error) && attempt >= 2) else {
+                    if Self.isRejectedAnisette(error) {
+                        throw "\(error.localizedDescription)\n\nApple refused the sign in from this anisette identity. It has been reset, so tap Continue to try again with a new one (Apple may ask for a verification code again). If it keeps failing, wait a while before retrying, because repeated attempts can make it worse."
+                    }
                     throw error
                 }
                 
@@ -150,6 +160,7 @@ class LoginViewModel: ObservableObject {
     
     private static func isAnisetteRelated(_ error: Error) -> Bool {
         if error is URLError { return true }
+        if isRejectedAnisette(error) { return true }
         guard let apiError = error as? AppleAPIError else { return false }
         switch apiError {
         case .invalidAnisetteData, .authenticationHandshakeFailed, .badServerResponse:
@@ -157,6 +168,13 @@ class LoginViewModel: ObservableObject {
         default:
             return false
         }
+    }
+    
+    /// -80045 (initial login) / -80046 (after the verification code): Apple
+    /// refuses the device identity the anisette data claims.
+    private static func isRejectedAnisette(_ error: Error) -> Bool {
+        guard case .customError(let code, _) = error as? AppleAPIError else { return false }
+        return code == -80045 || code == -80046
     }
 
     private func prepareForVerification(using handler: @escaping (String?) -> Void) {

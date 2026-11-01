@@ -31,26 +31,20 @@ final class AnisetteServerPool: @unchecked Sendable {
 
     static let serverListURL = URL(string: "https://servers.sidestore.io/servers.json")!
 
-    // kind 0 = anisette-v3-server, the only protocol AnisetteDataHelper speaks.
-    // SideStore-run servers first, then community servers that were reachable.
+    // Apple now refuses sign in with anisette from Android-based servers (kind 0)
+    // with error -80045/-80046, so only servers backed by real Mac/Windows ADI
+    // (kind 1 and 2) are used. They all speak the anisette v3 protocol.
     static let bundledServers: [AnisetteServer] = [
-        AnisetteServer(name: "SideStore", address: "https://ani.sidestore.io", kind: 0),
-        AnisetteServer(name: "SideStore (.app)", address: "https://ani.sidestore.app", kind: 0),
-        AnisetteServer(name: "SideStore (.zip)", address: "https://ani.sidestore.zip", kind: 0),
-        AnisetteServer(name: "SideStore (.xyz)", address: "https://ani.846969.xyz", kind: 0),
-        AnisetteServer(name: "Jayden's Server", address: "https://ani.jaydenha.uk", kind: 0),
-        AnisetteServer(name: "pythonplayer123", address: "https://ani3server.fly.dev", kind: 0),
-        AnisetteServer(name: "WE. Studio", address: "https://anisette.wedotstud.io", kind: 0),
-        AnisetteServer(name: "nythepegasus", address: "https://ani.npeg.us", kind: 0),
-        AnisetteServer(name: "iDH Server", address: "https://ani.idevicehacked.com", kind: 0),
-        AnisetteServer(name: "SteX", address: "https://ani.xu30.top", kind: 0),
-        AnisetteServer(name: "crystall1nedev's server", address: "https://anisette.crystall1ne.dev", kind: 0),
-        AnisetteServer(name: "ethxn's omnisette server", address: "https://omni.ethxn.xyz", kind: 0),
-        AnisetteServer(name: "uwucloud", address: "https://ani.uwucloud.fun", kind: 0),
+        AnisetteServer(name: "SideStore (New)", address: "https://new.ani.sidestore.io", kind: 2),
+        AnisetteServer(name: "jkcoxson", address: "https://mac-ani.jkcoxson.com", kind: 2),
+        AnisetteServer(name: "jkcoxson (ADI)", address: "https://ani.jkcoxson.com", kind: 1),
+        AnisetteServer(name: "Lill q", address: "https://anisette.lillq.me", kind: 2),
+        AnisetteServer(name: "SideStore (Windows ADI)", address: "https://win.ani.sidestore.io", kind: 1),
     ]
 
-    private static let cachedServersKey = "AnisetteServerPool.cachedServers"
-    private static let lastGoodKey = "AnisetteServerPool.lastGoodURL"
+    // v2: earlier builds cached Android servers, which Apple now rejects
+    private static let cachedServersKey = "AnisetteServerPool.cachedServers.v2"
+    private static let lastGoodKey = "AnisetteServerPool.lastGoodURL.v2"
     private static let failuresKey = "AnisetteServerPool.failures"
     // Failures older than this no longer count against a server
     private static let failureWindow: TimeInterval = 60 * 60
@@ -109,7 +103,7 @@ final class AnisetteServerPool: @unchecked Sendable {
     }
 
     private static func isUsable(_ server: AnisetteServer) -> Bool {
-        server.kind == 0 && server.url?.scheme == "https"
+        server.kind != 0 && server.url?.scheme == "https"
     }
 
     private func setServers(_ servers: [AnisetteServer]) {
@@ -150,7 +144,8 @@ final class AnisetteServerPool: @unchecked Sendable {
     }
 
     /// Probes every server concurrently and returns all of them, best first:
-    /// healthy before unhealthy, then fewest recent failures, then lowest latency.
+    /// healthy before unhealthy, then the last working one, then fewest recent
+    /// failures, then list order (most compatible servers are listed first).
     func rankedServers() async -> [AnisetteServerHealth] {
         let servers = self.servers
         let results = await withTaskGroup(of: AnisetteServerHealth.self) { group in
@@ -163,6 +158,7 @@ final class AnisetteServerPool: @unchecked Sendable {
         }
 
         let lastGood = lastGoodURL.map(Self.normalize)
+        let priority = Dictionary(servers.enumerated().map { (Self.normalize($1.address), $0) }, uniquingKeysWith: { a, _ in a })
         return results.sorted { a, b in
             if a.isHealthy != b.isHealthy { return a.isHealthy }
             let aGood = Self.normalize(a.server.address) == lastGood
@@ -171,6 +167,9 @@ final class AnisetteServerPool: @unchecked Sendable {
             let aFail = recentFailures(a.server.address)
             let bFail = recentFailures(b.server.address)
             if aFail != bFail { return aFail < bFail }
+            let aPriority = priority[Self.normalize(a.server.address)] ?? .max
+            let bPriority = priority[Self.normalize(b.server.address)] ?? .max
+            if aPriority != bPriority { return aPriority < bPriority }
             return (a.latency ?? .infinity) < (b.latency ?? .infinity)
         }
     }
