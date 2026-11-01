@@ -90,6 +90,7 @@ enum SideStoreAccountImporter {
         Keychain.shared.appleIDPassword = password
         Keychain.shared.adiPb = adiPB
         Keychain.shared.identifier = localUser
+        AnisetteDataHelper.adiPlatform = AnisetteDataHelper.importedADIPlatform
         AnisetteDataHelper.shared.resetClientInfo()
         
         return SideStoreAccount(email: email, password: password, adiPB: adiPB, localUser: localUser)

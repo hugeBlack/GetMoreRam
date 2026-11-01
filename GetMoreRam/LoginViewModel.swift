@@ -24,6 +24,10 @@ class LoginViewModel: ObservableObject {
     
     private var verificationCodeHandler: ((String?) -> Void)?
     private var isAuthenticationCancellationRequested = false
+    // Set once Apple asks for a 2FA code; after that a retry would send a second prompt
+    private var didRequestVerificationCode = false
+    
+    private static let maxSignInAttempts = 3
     
     func submitVerificationCode() {
         guard !isVerificationCodeSubmitting,
@@ -77,16 +81,7 @@ class LoginViewModel: ObservableObject {
         }
 
         do {
-            let anisetteData = try await AnisetteDataHelper.shared.getAnisetteData()
-
-            let (account, session) = try await AppleAPI.shared.authenticate(appleID: appleID, password: password, anisetteData: anisetteData) { [weak self] completionHandler in
-                guard let self else {
-                    completionHandler(nil)
-                    return
-                }
-
-                self.prepareForVerification(using: completionHandler)
-            }
+            let (account, session) = try await authenticateWithRetry(log: logging)
 
             guard !isAuthenticationCancellationRequested else {
                 throw CancellationError()
@@ -113,12 +108,82 @@ class LoginViewModel: ObservableObject {
         }
     }
 
+    /// Signs in, retrying with anisette data from a different server when Apple
+    /// rejects the anisette data or the connection drops. Wrong password, locked
+    /// account etc. are never retried so the account doesn't get locked.
+    private func authenticateWithRetry(log: (String) -> Void) async throws -> (Account, AppleAPISession) {
+        var badServers = Set<String>()
+        didRequestVerificationCode = false
+        
+        for attempt in 1...Self.maxSignInAttempts {
+            let anisetteData = try await AnisetteDataHelper.shared.getAnisetteData(excluding: badServers)
+            let server = AnisetteDataHelper.shared.lastUsedURL?.absoluteString
+            
+            do {
+                return try await AppleAPI.shared.authenticate(appleID: appleID, password: password, anisetteData: anisetteData) { [weak self] completionHandler in
+                    guard let self else {
+                        completionHandler(nil)
+                        return
+                    }
+
+                    self.prepareForVerification(using: completionHandler)
+                }
+            } catch {
+                if Self.isRejectedAnisette(error) {
+                    // Apple refused this anisette identity; provision a fresh one next time
+                    AnisetteDataHelper.shared.resetProvisioning()
+                }
+                
+                guard attempt < Self.maxSignInAttempts,
+                      !isAuthenticationCancellationRequested,
+                      !didRequestVerificationCode,
+                      Self.isAnisetteRelated(error),
+                      // Apple rejecting the identity twice in a row won't be fixed by hammering it
+                      !(Self.isRejectedAnisette(error) && attempt >= 2) else {
+                    if Self.isRejectedAnisette(error) {
+                        throw "\(error.localizedDescription)\n\nApple refused the sign in from this anisette identity. It has been reset, so tap Continue to try again with a new one (Apple may ask for a verification code again). If it keeps failing, wait a while before retrying, because repeated attempts can make it worse."
+                    }
+                    throw error
+                }
+                
+                log("Sign in failed (\(error.localizedDescription)), retrying with another anisette server (\(attempt + 1)/\(Self.maxSignInAttempts))")
+                if let server {
+                    badServers.insert(server)
+                    AnisetteServerPool.shared.recordFailure(server)
+                }
+                try await Task.sleep(nanoseconds: UInt64(attempt) * 1_000_000_000)
+            }
+        }
+        
+        throw "Sign in failed"
+    }
+    
+    private static func isAnisetteRelated(_ error: Error) -> Bool {
+        if error is URLError { return true }
+        if isRejectedAnisette(error) { return true }
+        guard let apiError = error as? AppleAPIError else { return false }
+        switch apiError {
+        case .invalidAnisetteData, .authenticationHandshakeFailed, .badServerResponse:
+            return true
+        default:
+            return false
+        }
+    }
+    
+    /// -80045 (initial login) / -80046 (after the verification code): Apple
+    /// refuses the device identity the anisette data claims.
+    private static func isRejectedAnisette(_ error: Error) -> Bool {
+        guard case .customError(let code, _) = error as? AppleAPIError else { return false }
+        return code == -80045 || code == -80046
+    }
+
     private func prepareForVerification(using handler: @escaping (String?) -> Void) {
         guard !isAuthenticationCancellationRequested else {
             handler(nil)
             return
         }
 
+        didRequestVerificationCode = true
         verificationCodeHandler = handler
         verificationCode = ""
         needVerificationCode = true

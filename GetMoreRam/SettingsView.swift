@@ -23,6 +23,8 @@ struct SettingsView: View {
     @State private var importResultShow = false
     @State private var importResultInfo = ""
     @State private var isImportingSideStoreAccount = false
+    @State private var serverHealth: [AnisetteServerHealth] = []
+    @State private var isTestingServers = false
     
 
     var body: some View {
@@ -55,11 +57,46 @@ struct SettingsView: View {
             
             Section {
                 HStack {
-                    Text("Anisette Server URL")
+                    Text("Custom Server")
                     Spacer()
-                    TextField("", text: $sharedModel.anisetteServerURL)
+                    TextField("Automatic (recommended)", text: $sharedModel.anisetteServerURL)
                         .multilineTextAlignment(.trailing)
+                        .keyboardType(.URL)
+                        .autocapitalization(.none)
+                        .disableAutocorrection(true)
                 }
+                Button {
+                    Task { await testServers() }
+                } label: {
+                    HStack {
+                        Text("Test Servers")
+                        if isTestingServers {
+                            Spacer()
+                            ProgressView()
+                        }
+                    }
+                }
+                .disabled(isTestingServers)
+                ForEach(serverHealth) { health in
+                    HStack {
+                        Image(systemName: health.isHealthy ? "checkmark.circle.fill" : "xmark.circle.fill")
+                            .foregroundStyle(health.isHealthy ? .green : .red)
+                        VStack(alignment: .leading) {
+                            Text(health.server.name)
+                            Text(health.server.address)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Text(health.latency.map { "\(Int($0 * 1000)) ms" } ?? "Down")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            } header: {
+                Text("Anisette Server")
+            } footer: {
+                Text("Sign in automatically switches between \(AnisetteServerPool.shared.servers.count) anisette servers if one fails. A custom server is tried first, with the others as backup.\(AnisetteServerPool.shared.lastGoodURL.map { "\n\nLast working server: \($0)" } ?? "")")
             }
             
             Section {
@@ -234,11 +271,13 @@ struct SettingsView: View {
     }
     
     func cleanUp() {
-        Keychain.shared.adiPb = nil
+        AnisetteDataHelper.shared.resetProvisioning()
         Keychain.shared.identifier = nil
         Keychain.shared.appleIDPassword = nil
         Keychain.shared.appleIDEmailAddress = nil
         AnisetteDataHelper.shared.resetClientInfo()
+        AnisetteServerPool.shared.reset()
+        serverHealth = []
         sharedModel.session = nil
         sharedModel.account = nil
         sharedModel.team = nil
@@ -247,6 +286,13 @@ struct SettingsView: View {
         viewModel.teamSelectionShow = false
         email = ""
         teamId = ""
+    }
+    
+    func testServers() async {
+        isTestingServers = true
+        defer { isTestingServers = false }
+        await AnisetteServerPool.shared.refresh()
+        serverHealth = await AnisetteServerPool.shared.rankedServers()
     }
     
     func importSideStoreAccount(_ result: Result<[URL], Error>) {

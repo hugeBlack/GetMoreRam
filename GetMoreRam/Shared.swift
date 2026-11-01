@@ -84,13 +84,45 @@ extension String: @retroactive LocalizedError {
 
 class SharedModel: ObservableObject {
     @Published var isLogin = false
-    @AppStorage("AnisetteServer") var anisetteServerURL = "https://ani.sidestore.io"
+    // Empty means automatic: pick from the anisette server pool
+    @Published var anisetteServerURL: String {
+        didSet {
+            UserDefaults.standard.set(anisetteServerURL, forKey: Self.customAnisetteServerKey)
+            Self.applyCustomAnisetteServer(anisetteServerURL)
+        }
+    }
     var session: AppleAPISession?
     var account: Account?
     var team: Team?
     
+    private static let customAnisetteServerKey = "CustomAnisetteServer"
+    private static let legacyAnisetteServerKey = "AnisetteServer"
+    
     init() {
-        AnisetteDataHelper.shared.url = URL(string: anisetteServerURL)
+        let defaults = UserDefaults.standard
+        if let custom = defaults.string(forKey: Self.customAnisetteServerKey) {
+            anisetteServerURL = custom
+        } else if let legacy = defaults.string(forKey: Self.legacyAnisetteServerKey),
+                  AnisetteServerPool.normalize(legacy) != "https://ani.sidestore.io" {
+            // Keep a server the user had set in the old single-server setting
+            anisetteServerURL = legacy
+        } else {
+            anisetteServerURL = ""
+        }
+        Self.applyCustomAnisetteServer(anisetteServerURL)
+        
+        Task.detached(priority: .utility) {
+            await AnisetteServerPool.shared.refresh()
+        }
+    }
+    
+    private static func applyCustomAnisetteServer(_ address: String) {
+        let trimmed = address.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmed.isEmpty, let url = URL(string: trimmed), url.scheme != nil, url.host != nil {
+            AnisetteDataHelper.shared.customURL = url
+        } else {
+            AnisetteDataHelper.shared.customURL = nil
+        }
     }
 }
 

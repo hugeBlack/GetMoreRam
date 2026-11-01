@@ -16,7 +16,48 @@ final class AnisetteDataHelper
 {
     var socket: URLSessionWebSocketTask?
     
+    // Server currently being talked to; set per attempt by getAnisetteData
     var url: URL?
+    // Server the user pinned in Settings; tried first, the pool is the fallback
+    var customURL: URL?
+    // Server that produced the last anisette data handed out
+    private(set) var lastUsedURL: URL?
+    
+    // How many different servers to try before giving up
+    static let maxServerAttempts = 5
+    
+    // Which kind of ADI provisioned the adi.pb in the keychain. adi.pb made by
+    // Android-based servers gets error -80045 from Apple, so it is discarded.
+    private static let adiPlatformKey = "AnisetteADIPlatform"
+    static let macADIPlatform = "mac"
+    static let importedADIPlatform = "imported"
+    
+    static var adiPlatform: String? {
+        get { UserDefaults.standard.string(forKey: adiPlatformKey) }
+        set { UserDefaults.standard.set(newValue, forKey: adiPlatformKey) }
+    }
+    
+    // Server that provisioned the stored adi.pb. Not every server can read
+    // every other server's adi.pb (e.g. anisette.lillq.me uses another format).
+    private static let adiSourceKey = "AnisetteADISource"
+    static var adiSource: String? {
+        get { UserDefaults.standard.string(forKey: adiSourceKey) }
+        set { UserDefaults.standard.set(newValue, forKey: adiSourceKey) }
+    }
+    
+    /// Drops the stored adi.pb so the next sign in provisions a fresh one.
+    func resetProvisioning() {
+        Keychain.shared.adiPb = nil
+        Self.adiPlatform = nil
+        Self.adiSource = nil
+    }
+    
+    private let anisetteSession: URLSession = {
+        let config = URLSessionConfiguration.default
+        config.timeoutIntervalForRequest = 15
+        config.timeoutIntervalForResource = 30
+        return URLSession(configuration: config)
+    }()
     var startProvisioningURL: URL?
     var endProvisioningURL: URL?
     
@@ -39,13 +80,70 @@ final class AnisetteDataHelper
         deviceId = nil
     }
     
-    func getAnisetteData(refresh: Bool = false) async throws -> AnisetteData
+    /// Gets anisette data, failing over across anisette servers until one works.
+    /// - Parameter excluding: server addresses not to use (e.g. one whose data Apple just rejected)
+    func getAnisetteData(excluding: Set<String> = []) async throws -> AnisetteData
     {
-        
-        if url == nil {
-            throw "No Anisette Server Found!"
+        if Keychain.shared.adiPb != nil,
+           Self.adiPlatform != Self.macADIPlatform,
+           Self.adiPlatform != Self.importedADIPlatform {
+            self.printOut("Stored adi.pb wasn't provisioned by a Mac anisette server, provisioning a new one (Apple may ask for a verification code again)")
+            resetProvisioning()
         }
         
+        let pool = AnisetteServerPool.shared
+        var tried = Set(excluding.map(AnisetteServerPool.normalize))
+        var failures: [String] = []
+        
+        func attempt(_ candidate: URL) async throws -> AnisetteData? {
+            let key = AnisetteServerPool.normalize(candidate.absoluteString)
+            guard tried.count - excluding.count < Self.maxServerAttempts,
+                  tried.insert(key).inserted else { return nil }
+            
+            self.url = candidate
+            do {
+                let ans = try await self.fetchFromCurrentServer()
+                pool.recordSuccess(candidate.absoluteString)
+                self.lastUsedURL = candidate
+                return ans
+            } catch {
+                if error is CancellationError || Task.isCancelled { throw CancellationError() }
+                pool.recordFailure(candidate.absoluteString)
+                self.printOut("Server \(candidate.absoluteString) failed: \(error.localizedDescription). Trying next server...")
+                failures.append("\(candidate.host ?? candidate.absoluteString): \(error.localizedDescription)")
+                // A half-finished provisioning session must not leak into the next server
+                self.socket?.cancel(with: .goingAway, reason: nil)
+                self.socket = nil
+                return nil
+            }
+        }
+        
+        // Fast path: the user's pinned server, then whatever worked last time, without probing
+        var quickCandidates: [URL] = []
+        if let customURL { quickCandidates.append(customURL) }
+        if let lastGood = pool.lastGoodURL, let url = URL(string: lastGood) { quickCandidates.append(url) }
+        for candidate in quickCandidates {
+            if let ans = try await attempt(candidate) { return ans }
+        }
+        
+        // Slow path: probe the whole pool and go through healthy servers, best first
+        self.printOut("Checking anisette servers...")
+        let ranked = await pool.rankedServers()
+        let healthyCount = ranked.filter(\.isHealthy).count
+        self.printOut("\(healthyCount)/\(ranked.count) anisette servers reachable")
+        for health in ranked where health.isHealthy {
+            guard let url = health.server.url else { continue }
+            if let ans = try await attempt(url) { return ans }
+        }
+        
+        if failures.isEmpty {
+            throw "No reachable anisette server found. Check your internet connection and try again."
+        }
+        throw "All anisette servers failed:\n" + failures.joined(separator: "\n")
+    }
+    
+    private func fetchFromCurrentServer() async throws -> AnisetteData
+    {
         self.printOut("Anisette URL: \(self.url!.absoluteString)")
         
         let ans : AnisetteData
@@ -71,7 +169,11 @@ final class AnisetteDataHelper
                     if let message = message,
                        message.contains("-45061") {
                         self.printOut("Error message contains -45061 (not provisioned), resetting adi.pb and retrying")
-                        Keychain.shared.adiPb = nil
+                        resetProvisioning()
+                        return try await provision()
+                    } else if Self.adiSource.map(AnisetteServerPool.normalize) != self.url.map({ AnisetteServerPool.normalize($0.absoluteString) }) {
+                        self.printOut("This server can't use the adi.pb another server made, provisioning a new one here")
+                        resetProvisioning()
                         return try await provision()
                     } else { throw message ?? "Unknown error" }
                 }
@@ -171,8 +273,8 @@ final class AnisetteDataHelper
     func startProvisioningSession() async throws -> AnisetteData {
         let provisioningSessionURL = self.webSocketURL(from: self.url!.appendingPathComponent("v3").appendingPathComponent("provisioning_session"))
         var wsRequest = URLRequest(url: provisioningSessionURL)
-        wsRequest.timeoutInterval = 5
-        let socket = URLSession.shared.webSocketTask(with: wsRequest)
+        wsRequest.timeoutInterval = 15
+        let socket = anisetteSession.webSocketTask(with: wsRequest)
         self.socket = socket
         socket.resume()
         try await self.receiveProvisioningMessages(from: socket)
@@ -243,6 +345,8 @@ final class AnisetteDataHelper
                 throw "The server didn't give us an adi.pb file"
             }
             Keychain.shared.adiPb = adiPb
+            Self.adiPlatform = Self.macADIPlatform
+            Self.adiSource = self.url?.absoluteString
             return true
             
         default:
@@ -313,6 +417,7 @@ final class AnisetteDataHelper
     
     func buildAppleRequest(url: URL) -> URLRequest {
         var request = URLRequest(url: url)
+        request.timeoutInterval = 15
         request.setValue(self.clientInfo!, forHTTPHeaderField: "X-Mme-Client-Info")
         request.setValue(self.userAgent!, forHTTPHeaderField: "User-Agent")
         request.setValue("text/x-xml-plist", forHTTPHeaderField: "Content-Type")
@@ -420,7 +525,6 @@ final class AnisetteDataHelper
     func fetchAnisetteV3(_ identifier: String, _ adiPb: String) async throws -> AnisetteData {
         try await fetchClientInfo()
         self.printOut("Fetching anisette V3")
-        let url = menuAnisetteURL
         var request = URLRequest(url: self.url!.appendingPathComponent("v3").appendingPathComponent("get_headers"))
         request.httpMethod = "POST"
         request.httpBody = try! JSONSerialization.data(withJSONObject: [
@@ -428,7 +532,10 @@ final class AnisetteDataHelper
             "adi_pb": adiPb
         ], options: [])
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await anisetteSession.data(for: request)
+        if let status = (response as? HTTPURLResponse)?.statusCode, status != 200 {
+            throw "Anisette server returned HTTP \(status)"
+        }
         
         return try await self.extractAnisetteData(data, response as? HTTPURLResponse, v3: true)
 
