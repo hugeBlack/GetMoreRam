@@ -16,7 +16,22 @@ final class AnisetteDataHelper
 {
     var socket: URLSessionWebSocketTask?
     
+    // Server currently being talked to; set per attempt by getAnisetteData
     var url: URL?
+    // Server the user pinned in Settings; tried first, the pool is the fallback
+    var customURL: URL?
+    // Server that produced the last anisette data handed out
+    private(set) var lastUsedURL: URL?
+    
+    // How many different servers to try before giving up
+    static let maxServerAttempts = 5
+    
+    private let anisetteSession: URLSession = {
+        let config = URLSessionConfiguration.default
+        config.timeoutIntervalForRequest = 15
+        config.timeoutIntervalForResource = 30
+        return URLSession(configuration: config)
+    }()
     var startProvisioningURL: URL?
     var endProvisioningURL: URL?
     
@@ -39,13 +54,63 @@ final class AnisetteDataHelper
         deviceId = nil
     }
     
-    func getAnisetteData(refresh: Bool = false) async throws -> AnisetteData
+    /// Gets anisette data, failing over across anisette servers until one works.
+    /// - Parameter excluding: server addresses not to use (e.g. one whose data Apple just rejected)
+    func getAnisetteData(excluding: Set<String> = []) async throws -> AnisetteData
     {
+        let pool = AnisetteServerPool.shared
+        var tried = Set(excluding.map(AnisetteServerPool.normalize))
+        var failures: [String] = []
         
-        if url == nil {
-            throw "No Anisette Server Found!"
+        func attempt(_ candidate: URL) async throws -> AnisetteData? {
+            let key = AnisetteServerPool.normalize(candidate.absoluteString)
+            guard tried.count - excluding.count < Self.maxServerAttempts,
+                  tried.insert(key).inserted else { return nil }
+            
+            self.url = candidate
+            do {
+                let ans = try await self.fetchFromCurrentServer()
+                pool.recordSuccess(candidate.absoluteString)
+                self.lastUsedURL = candidate
+                return ans
+            } catch {
+                if error is CancellationError || Task.isCancelled { throw CancellationError() }
+                pool.recordFailure(candidate.absoluteString)
+                self.printOut("Server \(candidate.absoluteString) failed: \(error.localizedDescription). Trying next server...")
+                failures.append("\(candidate.host ?? candidate.absoluteString): \(error.localizedDescription)")
+                // A half-finished provisioning session must not leak into the next server
+                self.socket?.cancel(with: .goingAway, reason: nil)
+                self.socket = nil
+                return nil
+            }
         }
         
+        // Fast path: the user's pinned server, then whatever worked last time, without probing
+        var quickCandidates: [URL] = []
+        if let customURL { quickCandidates.append(customURL) }
+        if let lastGood = pool.lastGoodURL, let url = URL(string: lastGood) { quickCandidates.append(url) }
+        for candidate in quickCandidates {
+            if let ans = try await attempt(candidate) { return ans }
+        }
+        
+        // Slow path: probe the whole pool and go through healthy servers, best first
+        self.printOut("Checking anisette servers...")
+        let ranked = await pool.rankedServers()
+        let healthyCount = ranked.filter(\.isHealthy).count
+        self.printOut("\(healthyCount)/\(ranked.count) anisette servers reachable")
+        for health in ranked where health.isHealthy {
+            guard let url = health.server.url else { continue }
+            if let ans = try await attempt(url) { return ans }
+        }
+        
+        if failures.isEmpty {
+            throw "No reachable anisette server found. Check your internet connection and try again."
+        }
+        throw "All anisette servers failed:\n" + failures.joined(separator: "\n")
+    }
+    
+    private func fetchFromCurrentServer() async throws -> AnisetteData
+    {
         self.printOut("Anisette URL: \(self.url!.absoluteString)")
         
         let ans : AnisetteData
@@ -171,8 +236,8 @@ final class AnisetteDataHelper
     func startProvisioningSession() async throws -> AnisetteData {
         let provisioningSessionURL = self.webSocketURL(from: self.url!.appendingPathComponent("v3").appendingPathComponent("provisioning_session"))
         var wsRequest = URLRequest(url: provisioningSessionURL)
-        wsRequest.timeoutInterval = 5
-        let socket = URLSession.shared.webSocketTask(with: wsRequest)
+        wsRequest.timeoutInterval = 15
+        let socket = anisetteSession.webSocketTask(with: wsRequest)
         self.socket = socket
         socket.resume()
         try await self.receiveProvisioningMessages(from: socket)
@@ -313,6 +378,7 @@ final class AnisetteDataHelper
     
     func buildAppleRequest(url: URL) -> URLRequest {
         var request = URLRequest(url: url)
+        request.timeoutInterval = 15
         request.setValue(self.clientInfo!, forHTTPHeaderField: "X-Mme-Client-Info")
         request.setValue(self.userAgent!, forHTTPHeaderField: "User-Agent")
         request.setValue("text/x-xml-plist", forHTTPHeaderField: "Content-Type")
@@ -420,7 +486,6 @@ final class AnisetteDataHelper
     func fetchAnisetteV3(_ identifier: String, _ adiPb: String) async throws -> AnisetteData {
         try await fetchClientInfo()
         self.printOut("Fetching anisette V3")
-        let url = menuAnisetteURL
         var request = URLRequest(url: self.url!.appendingPathComponent("v3").appendingPathComponent("get_headers"))
         request.httpMethod = "POST"
         request.httpBody = try! JSONSerialization.data(withJSONObject: [
@@ -428,7 +493,10 @@ final class AnisetteDataHelper
             "adi_pb": adiPb
         ], options: [])
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await anisetteSession.data(for: request)
+        if let status = (response as? HTTPURLResponse)?.statusCode, status != 200 {
+            throw "Anisette server returned HTTP \(status)"
+        }
         
         return try await self.extractAnisetteData(data, response as? HTTPURLResponse, v3: true)
 
