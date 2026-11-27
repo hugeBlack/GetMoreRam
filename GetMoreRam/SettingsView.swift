@@ -7,9 +7,7 @@
 
 import SwiftUI
 import UniformTypeIdentifiers
-import StosSign_API
-import StosSign_Auth
-import StosSign_Common
+import SideSign
 
 struct SettingsView: View {
 
@@ -55,25 +53,31 @@ struct SettingsView: View {
                 }
             } header: {
                 Text("Account")
+            } footer: {
+                Text("If you use SideStore and are already signed in, please also try exporting SideStore Account from SideStore settings and import it here to sign in. SideStore 0.6.4+ required.")
             }
-            
-            Section {
-                HStack {
-                    Text("Anisette Server URL")
-                    Spacer()
-                    TextField("", text: $sharedModel.anisetteServerURL)
-                        .multilineTextAlignment(.trailing)
-                }
-            }
-            
+
             Section {
                 Button("Clean Up Keychain") {
                     cleanUp()
                 }
             } footer: {
-                Text("If something went wrong during signing in, please try to clean up the keychain, repoen the app and try again. \n \nIf you use SideStore and are already signed in, please also try exporting SideStore Account from SideStore settings and import it here to sign in. Newer SideStore versions export an encrypted .sideconf file, so keep the file password you chose, it is asked for while importing.")
+                Text("If something went wrong during signing in, please try to clean up the keychain, repoen the app and try again.")
+            }
+            
+            Section {
+                headerFieldRow(title: "Server URL", headerKey: "", text: $sharedModel.anisetteServerURL, placeholder: "https://....", isMultiline: true)
+                headerFieldRow(title: "Client Info", headerKey: "", text: $sharedModel.anisetteClientInfo, placeholder: "<MacBookPro> ...", isMultiline: true)
+                headerFieldRow(title: "User Agent", headerKey: "", text: $sharedModel.anisetteUA, placeholder: "akd/1.0 ...", isMultiline: true)
+                
+                Button("Fetch From Anisette Server") {
+                    Task { await fetchClientInfo() }
+                }
+            } header: {
+                Text("Anisette Server Settings")
             }
         }
+        .scrollDismissesKeyboard(.immediately)
         .alert("Error", isPresented: $errorShow){
             Button("OK".loc, action: {
             })
@@ -203,6 +207,57 @@ struct SettingsView: View {
         }
     }
     
+    // stolen from sidestore
+    private func headerFieldRow(
+        title: String,
+        headerKey: String,
+        text: Binding<String>,
+        placeholder: String,
+        isMultiline: Bool = false,
+        autocapitalization: UITextAutocapitalizationType = .none
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text(title)
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundColor(.white)
+                Spacer()
+                Text(headerKey)
+                    .font(.system(size: 11, design: .monospaced))
+                    .foregroundColor(Color.white.opacity(0.45))
+            }
+            
+            if isMultiline {
+                #if !os(tvOS)
+                TextEditor(text: text)
+                    .font(.system(size: 12, design: .monospaced))
+                    .foregroundColor(.primary)
+                    .frame(minHeight: 64)
+                    .padding(6)
+                    .background(Color.white.opacity(0.06))
+                    .cornerRadius(8)
+                #else
+                TextField(placeholder, text: text)
+                    .font(.system(size: 13, design: .monospaced))
+                    .foregroundColor(.white)
+                    .padding(8)
+                    .background(Color.white.opacity(0.06))
+                    .cornerRadius(8)
+                #endif
+            } else {
+                TextField(placeholder, text: text)
+                    .font(.system(size: 13, design: .monospaced))
+                    .foregroundColor(.white)
+                    .autocapitalization(autocapitalization)
+                    .disableAutocorrection(true)
+                    .padding(8)
+                    .background(Color.white.opacity(0.06))
+                    .cornerRadius(8)
+            }
+        }
+
+    }
+    
     func loginButtonClicked() async {
         do {
             if viewModel.needVerificationCode {
@@ -253,7 +308,6 @@ struct SettingsView: View {
         Keychain.shared.identifier = nil
         Keychain.shared.appleIDPassword = nil
         Keychain.shared.appleIDEmailAddress = nil
-        AnisetteDataHelper.shared.resetClientInfo()
         sharedModel.session = nil
         sharedModel.account = nil
         sharedModel.team = nil
@@ -377,6 +431,38 @@ struct SettingsView: View {
             return "Organization"
         case .unknown:
             return "Unknown"
+        }
+    }
+    
+    func fetchClientInfo() async {
+        let activeServer = sharedModel.anisetteServerURL
+        guard !activeServer.isEmpty, let url = URL(string: activeServer) else {
+            errorInfo = "No active anisette server URL configured."
+            errorShow = true
+            return
+        }
+        
+        let clientInfoURL = url.appendingPathComponent("v3").appendingPathComponent("client_info")
+        var request = URLRequest(url: clientInfoURL)
+        request.timeoutInterval = 10
+        let json: [String : String]
+        do {
+            let (data, _) = try await URLSession.shared.data(for: request)
+            guard let json2 = try JSONSerialization.jsonObject(with: data) as? [String: String] else {
+                throw NSError(domain: "AnisetteDataViewModel", code: -2, userInfo: [NSLocalizedDescriptionKey: "Server response is not a valid JSON."])
+            }
+            json = json2
+            
+        } catch {
+            errorInfo = error.localizedDescription
+            errorShow = true
+            return
+        }
+        if let fetchedClientInfo = json["client_info"] {
+            sharedModel.anisetteClientInfo = fetchedClientInfo
+        }
+        if let fetchedUA = json["user_agent"] {
+            sharedModel.anisetteUA = fetchedUA
         }
     }
 

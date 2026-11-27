@@ -80,6 +80,22 @@ public class Keychain
     
     @KeychainItem(key: "adiPb")
     public var adiPb: String?
+
+    var anisetteDeviceIdentifier: UUID? {
+        guard let identifier else { return nil }
+        if let uuid = UUID(uuidString: identifier) {
+            return uuid
+        }
+        if let bytes = Data(base64Encoded: identifier), bytes.count == MemoryLayout<uuid_t>.size {
+            return UUID(uuid: bytes.withUnsafeBytes { $0.loadUnaligned(as: uuid_t.self) })
+        }
+        let uuidString = identifier.replacingOccurrences(
+            of: "^([0-9a-fA-F]{8})([0-9a-fA-F]{4})([0-9a-fA-F]{4})([0-9a-fA-F]{4})([0-9a-fA-F]{12})$",
+            with: "$1-$2-$3-$4-$5",
+            options: .regularExpression
+        )
+        return UUID(uuidString: uuidString)
+    }
     
     private init()
     {

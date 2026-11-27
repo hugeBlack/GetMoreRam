@@ -1,40 +1,49 @@
 {
-  "originHash" : "ed9d94c0e0395c6c77989790d2b73286f1df7389f304b9e380243fcd64d81d9b",
+  "originHash" : "07b7f4bee2b1cbc0e1b5c641eb69b37acc122dea21a3f56af6012ee2b623cd61",
   "pins" : [
     {
-      "identity" : "big-num",
+      "identity" : "anisettekit",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/adam-fowler/big-num",
-      "state" : {
-        "revision" : "9059dcab8dd001b8143bc512b4477d079e97957f",
-        "version" : "2.0.3"
-      }
-    },
-    {
-      "identity" : "cryptoswift",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/krzyzanowskim/CryptoSwift",
-      "state" : {
-        "revision" : "f2a627b84c1ff96f21ac2fcb623ab36142dd5512",
-        "version" : "1.10.0"
-      }
-    },
-    {
-      "identity" : "openssl",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/krzyzanowskim/OpenSSL",
-      "state" : {
-        "revision" : "4b1188ba947ddc23d03b13096b9e44b804e146c9",
-        "version" : "3.6.3000"
-      }
-    },
-    {
-      "identity" : "stossign",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/stossy11/StosSign",
+      "location" : "https://github.com/mahee96/AnisetteKit.git",
       "state" : {
         "branch" : "main",
-        "revision" : "01dd7bc4f5084ade9e2ebbc7e338dc2e3f454d77"
+        "revision" : "db8b41022697b6c19be8a5f01a1ce834145a2a26"
+      }
+    },
+    {
+      "identity" : "codesignkit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/mahee96/CodeSignKit.git",
+      "state" : {
+        "branch" : "main",
+        "revision" : "d0c67710fda9a2646b9e829cb2cf443892728371"
+      }
+    },
+    {
+      "identity" : "gsacryptokit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/mahee96/GSACryptoKit.git",
+      "state" : {
+        "branch" : "main",
+        "revision" : "eae2590eaf17fe98ce9c76b3ec2bd42b780eb123"
+      }
+    },
+    {
+      "identity" : "libdeflate",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/SideStore/libdeflate",
+      "state" : {
+        "branch" : "master",
+        "revision" : "da6c7dae03b78dc71af973664575e4209786fbfe"
+      }
+    },
+    {
+      "identity" : "sidesign",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/SideStore/SideSign.git",
+      "state" : {
+        "branch" : "main",
+        "revision" : "752d1ef602aa792a432ffa1e71646dc1ecf7363c"
       }
     },
     {
@@ -42,34 +51,17 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-asn1.git",
       "state" : {
-        "revision" : "d9a5b37470adc940d22c3bcd5ca6953a516b727f",
-        "version" : "1.7.2"
-      }
-    },
-    {
-      "identity" : "swift-certificates",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/apple/swift-certificates.git",
-      "state" : {
-        "revision" : "c8aece90ea05f9866bd392a5bf13b5cae56c0e03",
-        "version" : "1.20.0"
+        "revision" : "9f542610331815e29cc3821d3b6f488db8715517",
+        "version" : "1.6.0"
       }
     },
     {
       "identity" : "swift-crypto",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/apple/swift-crypto",
+      "location" : "https://github.com/apple/swift-crypto.git",
       "state" : {
-        "revision" : "da9d28d69ebe3894b18376c8f2395c2f37b8448f",
-        "version" : "4.5.2"
-      }
-    },
-    {
-      "identity" : "swift-srp",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/adam-fowler/swift-srp.git",
-      "state" : {
-        "revision" : "ce202c48f8ca68f44b71732f945eb8221d6fe135"
+        "revision" : "bb4ba815dab96d4edc1e0b86d7b9acf9ff973a84",
+        "version" : "4.3.1"
       }
     }
   ],

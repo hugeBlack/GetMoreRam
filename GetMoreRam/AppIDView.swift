@@ -12,6 +12,9 @@ struct AppIDEditView : View {
     @State private var errorShow = false
     @State private var errorInfo = ""
     
+    @State private var infoShow = false
+    @State private var infoInfo = ""
+    
     var body: some View {
         Form {
             Section {
@@ -19,6 +22,11 @@ struct AppIDEditView : View {
                     Task { await addIncreasedMemoryLimit() }
                 } label: {
                     Text("Add Increased Memory Limit")
+                }
+                Button {
+                    Task { await check() }
+                } label: {
+                    Text("Check")
                 }
             }
             
@@ -35,6 +43,12 @@ struct AppIDEditView : View {
         } message: {
             Text(errorInfo)
         }
+        .alert("Info", isPresented: $infoShow){
+            Button("OK".loc, action: {
+            })
+        } message: {
+            Text(infoInfo)
+        }
         .navigationTitle(viewModel.bundleID)
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -47,6 +61,23 @@ struct AppIDEditView : View {
             errorShow = true
         }
 
+    }
+    
+    func check() async {
+        do {
+            let isEnabled = try await viewModel.check()
+            if isEnabled {
+                infoInfo = "Congratulations🎉! Increased Memory Limit has been enabled for this App ID! Please reinstall this app for the change to take effect."
+                infoShow = true
+            } else {
+                infoInfo = "Increased Memory Limit has NOT been enabled for this App ID."
+                infoShow = true
+            }
+            
+        } catch {
+            errorInfo = error.detailedDescription
+            errorShow = true
+        }
     }
 }
 

@@ -229,9 +229,6 @@ enum SideStoreAccountImporter {
         guard !email.isEmpty else { throw SideStoreAccountImportError.missingRequiredField("email") }
         guard !adiPB.isEmpty else { throw SideStoreAccountImportError.missingRequiredField("anisetteAdiBlob") }
         guard !localUser.isEmpty else { throw SideStoreAccountImportError.missingRequiredField("anisetteIdentifier") }
-        guard let decodedLocalUser = Data(base64Encoded: localUser), decodedLocalUser.count == 16 else {
-            throw SideStoreAccountImportError.invalidLocalUser
-        }
 
         let account = SideStoreAccount(
             version: decoded.version,
@@ -246,7 +243,6 @@ enum SideStoreAccountImporter {
         Keychain.shared.appleIDPassword = account.password
         Keychain.shared.adiPb = account.adiPB
         Keychain.shared.identifier = account.localUser
-        AnisetteDataHelper.shared.resetClientInfo()
 
         return account
     }

@@ -5,9 +5,8 @@
 //  Created by s s on 2025/3/15.
 //
 import SwiftUI
-import StosSign_API
-import StosSign_Auth
-import StosSign_Common
+import SideSign
+import AnisetteKit
 
 class AlertHelper<T> : ObservableObject {
     @Published var show = false
@@ -84,19 +83,57 @@ extension String: @retroactive LocalizedError {
 
 class SharedModel: ObservableObject {
     @Published var isLogin = false
-    @AppStorage("AnisetteServer") var anisetteServerURL = "https://ani.sidestore.io"
-    var session: AppleAPISession?
+    @AppStorage("AnisetteServer") var anisetteServerURL = "https://new.ani.sidestore.io"
+    @AppStorage("AnisetteClientInfo") var anisetteClientInfo = "<MacBookPro13,3> <Mac OS X;10.12.6;16G29> <com.apple.AuthKit/1 (com.apple.akd/1.0)>"
+    @AppStorage("AnisetteUA") var anisetteUA = "akd/1.0 CFNetwork/811.5.4 Darwin/16.7.0"
+    var anisetteHeader: AnisetteRequestHeaders?
+    var session: Session?
     var account: Account?
     var team: Team?
-    
-    init() {
-        AnisetteDataHelper.shared.url = URL(string: anisetteServerURL)
-    }
 }
 
 class DataManager {
     static let shared = DataManager()
     let model = SharedModel()
+    
+    public static func fetchAnisetteData(logger: (((String) async->Void))? = nil ) async throws -> AnisetteData {
+        let server = DataManager.shared.model.anisetteServerURL.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let url = URL(string: server), url.host != nil,
+              let scheme = url.scheme?.lowercased(), ["https", "http"].contains(scheme) else {
+            throw AnisetteError.invalidURL
+        }
+        await logger?("Anisette URL: \(url.absoluteString)\n")
+
+        let keychain = Keychain.shared
+        let savedIdentifier = keychain.anisetteDeviceIdentifier
+        let identifier = savedIdentifier ?? UUID()
+        let savedBlob = savedIdentifier == nil ? nil : keychain.adiPb.flatMap { Data(base64Encoded: $0) }
+        let manager = AnisetteDataManager(mode: .remote(server: url))
+
+        let result: (data: AnisetteData, newAdiBlob: Data?)
+        let headers = AnisetteRequestHeaders().with {
+            $0.clientInfo = DataManager.shared.model.anisetteClientInfo
+            $0.userAgent = DataManager.shared.model.anisetteUA
+        }
+        DataManager.shared.model.anisetteHeader = headers
+        do {
+            result = try await manager.fetchAnisetteData(identifier: identifier, existingAdiBlob: savedBlob, headers: headers)
+            
+        } catch SideSign.AnisetteError.badServerResponse(_, let payload)
+            where savedBlob != nil && payload.contains("-45061") && !Task.isCancelled {
+            await logger?("Anisette provisioning expired. Retrying…\n")
+            keychain.adiPb = nil
+            result = try await manager.fetchAnisetteData(identifier: identifier, headers: headers)
+        }
+
+        guard !Task.isCancelled else { throw CancellationError() }
+        if let newBlob = result.newAdiBlob {
+            keychain.identifier = withUnsafeBytes(of: identifier.uuid) { Data($0).base64EncodedString() }
+            keychain.adiPb = newBlob.base64EncodedString()
+        }
+        await logger?("Successfully fetched Anisette data\n")
+        return result.data
+    }
 }
 
 extension Error {

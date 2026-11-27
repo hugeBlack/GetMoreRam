@@ -1,5 +1,5 @@
 # Get More Ram
-A simple [StosSign](https://github.com/stossy11/StosSign) wrapper app that allows you to enable "Increased Memory Limit" for your sideloaded apps without using Xcode.
+A simple [SideSign](https://github.com/SideStore/SideSign) wrapper app that allows you to enable "Increased Memory Limit" for your sideloaded apps without using Xcode.
 
 # How to use
 1. Sideload this app
@@ -12,5 +12,6 @@ A simple [StosSign](https://github.com/stossy11/StosSign) wrapper app that allow
 8. Check if you have "Increased Memory Limit"
 
 # Credits
-Stossy11 - For StosSign.
-SideStore - Anisette Data fetching codes are stolen from SideStore
+SideStore - For SideSign.
+
+Stossy11 - For the original StosSign integration.
